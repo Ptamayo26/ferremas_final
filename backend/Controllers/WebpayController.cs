@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Ferremas.Api.Services;
 using Ferremas.Api.Services.Interfaces;
 using System.Text.Json;
+using System;
 
 namespace Ferremas.Api.Controllers
 {
@@ -72,19 +73,29 @@ namespace Ferremas.Api.Controllers
             }
 
             // Mapear los datos relevantes para el frontend
+            var detalles = pago.Pedido.Detalles;
+            decimal subtotalBruto = detalles.Sum(d => d.Subtotal ?? ((d.PrecioUnitario ?? 0) * (d.Cantidad ?? 0)));
+            decimal subtotalNeto = Math.Round(subtotalBruto / 1.19m, 0);
+            decimal iva = subtotalBruto - subtotalNeto;
+            decimal descuento = 0m; // Si tienes lógica de descuentos, cámbiala aquí
+            decimal envio = 0m; // Si tienes lógica de envío, cámbiala aquí
             var pedido = new {
                 numeroPedido = pago.Pedido.Id.ToString(),
-                total = pago.Pedido.Total,
+                total = subtotalBruto, // El total es el valor con IVA
                 estado = pago.Pedido.Estado,
                 fechaCreacion = pago.Pedido.FechaCreacion,
                 tiempoEnvio = "2-4 días hábiles", // Simulado
                 urlBoleta = "/descargas/boleta" + pago.Pedido.Id + ".pdf", // Simulado
                 urlFactura = "/descargas/factura" + pago.Pedido.Id + ".pdf", // Simulado
-                productos = pago.Pedido.Detalles.Select(d => new {
+                productos = detalles.Select(d => new {
                     nombre = d.Producto?.Nombre ?? "Producto",
                     cantidad = d.Cantidad,
                     precio = d.PrecioUnitario
-                })
+                }),
+                subtotal = subtotalNeto,
+                descuento,
+                impuestos = iva,
+                envio
             };
             return Ok(new { success = true, pedido });
         }

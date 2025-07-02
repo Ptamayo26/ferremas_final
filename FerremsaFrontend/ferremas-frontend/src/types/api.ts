@@ -367,6 +367,13 @@ export interface CheckoutRequestDTO {
   observaciones?: string;
   codigoDescuento?: string;
   items?: CarritoItemDTO[];
+  tipoDocumento?: 'boleta' | 'factura';
+  datosEmpresa?: {
+    razonSocial: string;
+    rut: string;
+    giro: string;
+    direccion: string;
+  };
 }
 
 export interface CheckoutResponseDTO {

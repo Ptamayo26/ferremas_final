@@ -9,8 +9,10 @@ namespace Ferremas.Api.DTOs
         public string Codigo { get; set; } = string.Empty;
 
         [Required]
-        [Range(0.01, 100)]
-        public decimal Porcentaje { get; set; }
+        public string Tipo { get; set; } = "porcentaje"; // 'porcentaje' o 'monto'
+
+        [Required]
+        public decimal Valor { get; set; } // porcentaje (ej: 10 para 10%) o monto fijo
 
         public DateTime FechaInicio { get; set; }
 

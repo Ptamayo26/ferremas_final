@@ -11,6 +11,11 @@ interface PedidoDetalle {
   urlBoleta?: string;
   urlFactura?: string;
   productos?: { nombre: string; cantidad: number; precio: number }[];
+  tipoDocumento: string;
+  subtotal?: number;
+  descuento?: number;
+  impuestos?: number;
+  envio?: number;
 }
 
 const ConfirmacionPago: React.FC = () => {
@@ -68,7 +73,7 @@ const ConfirmacionPago: React.FC = () => {
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Total:</span>
-            <span className="font-bold text-xl text-ferremas-primary">${pedido.total.toLocaleString('es-CL')}</span>
+            <span className="font-bold text-xl text-ferremas-primary">${Math.round(pedido.total).toLocaleString('es-CL')}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Estado:</span>
@@ -97,14 +102,50 @@ const ConfirmacionPago: React.FC = () => {
           ))}
         </ul>
       </div>
+      {/* Desglose de totales */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-6">
+        <div className="space-y-1">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
+            <span>${pedido.subtotal ? Math.round(pedido.subtotal).toLocaleString('es-CL') : '0'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Descuento:</span>
+            <span>-${pedido.descuento ? Math.round(pedido.descuento).toLocaleString('es-CL') : '0'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>IVA (19%):</span>
+            <span>${pedido.impuestos ? Math.round(pedido.impuestos).toLocaleString('es-CL') : '0'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Envío:</span>
+            <span>${pedido.envio ? Math.round(pedido.envio).toLocaleString('es-CL') : '0'}</span>
+          </div>
+          <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg">
+            <span>Total:</span>
+            <span className="text-ferremas-primary">${Math.round(pedido.total).toLocaleString('es-CL')}</span>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">El total incluye impuestos y envío.</p>
+      </div>
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        {pedido.urlBoleta && (
-          <a href={pedido.urlBoleta} className="btn-secondary flex-1" download>
+        {pedido.tipoDocumento !== 'factura' && (
+          <a
+            href={`/api/facturas/boleta/${pedido.numeroPedido}`}
+            className="btn-secondary flex-1"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Descargar Boleta
           </a>
         )}
-        {pedido.urlFactura && (
-          <a href={pedido.urlFactura} className="btn-secondary flex-1" download>
+        {pedido.tipoDocumento === 'factura' && (
+          <a
+            href={`/api/facturas/factura/${pedido.numeroPedido}`}
+            className="btn-secondary flex-1"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Descargar Factura
           </a>
         )}

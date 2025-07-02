@@ -18,6 +18,10 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
   const [selectedDireccionId, setSelectedDireccionId] = useState<number | null>(null);
   const [metodoPago, setMetodoPago] = useState<string>('efectivo');
   const [observaciones, setObservaciones] = useState<string>('');
+  const [codigoDescuento, setCodigoDescuento] = useState('');
+  const [descuentoAplicado, setDescuentoAplicado] = useState<string | null>(null);
+  const [descuentoError, setDescuentoError] = useState<string | null>(null);
+  const [infoDescuento, setInfoDescuento] = useState<{tipo: string, valor: number} | null>(null);
   
   // Estados para confirmación y notificaciones
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -32,6 +36,16 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
     title: string;
     message?: string;
   }>({ isOpen: false, type: 'info', title: '' });
+
+  // Estado para tipo de documento y datos de empresa
+  const [tipoDocumento, setTipoDocumento] = useState<'boleta' | 'factura'>('boleta');
+  const [empresa, setEmpresa] = useState({
+    razonSocial: '',
+    rut: '',
+    giro: '',
+    direccion: ''
+  });
+  const [empresaError, setEmpresaError] = useState('');
 
   const fetchResumenCheckout = async () => {
     try {
@@ -79,10 +93,18 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
       return;
     }
 
+    if (tipoDocumento === 'factura') {
+      if (!empresa.razonSocial || !empresa.rut || !empresa.giro || !empresa.direccion) {
+        setEmpresaError('Todos los campos de empresa son obligatorios para factura');
+        return;
+      }
+      setEmpresaError('');
+    }
+
     setConfirmDialog({
       isOpen: true,
       title: 'Confirmar Pedido',
-      message: `¿Está seguro de que desea procesar el pedido por $${resumen.total.toFixed(2)}?\n\nEsta acción no se puede deshacer.`
+      message: `¿Está seguro de que desea procesar el pedido por $${resumen.total.toLocaleString('es-CL')}?\n\nEsta acción no se puede deshacer.`
     });
   };
 
@@ -95,7 +117,10 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
         clienteId: resumen.cliente.id,
         direccionId: selectedDireccionId,
         metodoPago: metodoPago,
-        observaciones: observaciones || undefined
+        observaciones: observaciones || undefined,
+        tipoDocumento,
+        datosEmpresa: tipoDocumento === 'factura' ? empresa : undefined,
+        codigoDescuento: descuentoAplicado || undefined
       };
 
       const response = await checkoutService.procesarCheckout(checkoutData);
@@ -120,6 +145,30 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
     } finally {
       setProcessing(false);
     }
+  };
+
+  const aplicarDescuento = async () => {
+    setDescuentoError(null);
+    setDescuentoAplicado(null);
+    setInfoDescuento(null);
+    if (!codigoDescuento) {
+      setDescuentoError('Ingrese un código de descuento');
+      return;
+    }
+    try {
+      const data = await checkoutService.validarCodigoDescuento(codigoDescuento);
+      setDescuentoAplicado(codigoDescuento);
+      setInfoDescuento({ tipo: data.tipo, valor: data.valor });
+    } catch (err) {
+      setDescuentoError('Código de descuento inválido o expirado');
+    }
+  };
+
+  const quitarDescuento = () => {
+    setCodigoDescuento('');
+    setDescuentoAplicado(null);
+    setInfoDescuento(null);
+    setDescuentoError(null);
   };
 
   if (!isOpen) return null;
@@ -236,6 +285,77 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
                 </div>
               </div>
 
+              {/* Tipo de documento */}
+              <div className="card">
+                <h3 className="text-lg font-semibold mb-4">Tipo de Documento</h3>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="tipoDocumento"
+                      value="boleta"
+                      checked={tipoDocumento === 'boleta'}
+                      onChange={() => setTipoDocumento('boleta')}
+                      className="mr-2"
+                    />
+                    <span>Boleta</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="tipoDocumento"
+                      value="factura"
+                      checked={tipoDocumento === 'factura'}
+                      onChange={() => setTipoDocumento('factura')}
+                      className="mr-2"
+                    />
+                    <span>Factura</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Datos de la empresa */}
+              {tipoDocumento === 'factura' && (
+                <div className="card">
+                  <h3 className="text-lg font-semibold mb-4">Datos de la Empresa</h3>
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Razón Social"
+                      value={empresa.razonSocial}
+                      onChange={e => setEmpresa({ ...empresa, razonSocial: e.target.value })}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="RUT Empresa"
+                      value={empresa.rut}
+                      onChange={e => setEmpresa({ ...empresa, rut: e.target.value })}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="Giro"
+                      value={empresa.giro}
+                      onChange={e => setEmpresa({ ...empresa, giro: e.target.value })}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="Dirección Empresa"
+                      value={empresa.direccion}
+                      onChange={e => setEmpresa({ ...empresa, direccion: e.target.value })}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                    {empresaError && <p className="text-red-500 text-sm">{empresaError}</p>}
+                  </div>
+                </div>
+              )}
+
               {/* Observaciones */}
               <div className="card">
                 <h3 className="text-lg font-semibold mb-4">Observaciones</h3>
@@ -280,6 +400,49 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Campo para código de descuento */}
+              <div className="card">
+                <h3 className="text-lg font-semibold mb-4">Código de Descuento</h3>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={codigoDescuento}
+                    onChange={e => setCodigoDescuento(e.target.value)}
+                    placeholder="Ingresa tu código"
+                    className="p-2 border rounded w-2/3"
+                    disabled={!!descuentoAplicado}
+                  />
+                  <button
+                    className="btn-secondary"
+                    onClick={aplicarDescuento}
+                    type="button"
+                    disabled={!!descuentoAplicado}
+                  >
+                    Aplicar
+                  </button>
+                  {descuentoAplicado && (
+                    <button
+                      className="btn-danger ml-2"
+                      onClick={quitarDescuento}
+                      type="button"
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
+                {descuentoAplicado && infoDescuento && (
+                  <p className="text-green-600 text-sm mt-2">
+                    Código aplicado: <b>{descuentoAplicado}</b> - 
+                    {infoDescuento.tipo === 'porcentaje'
+                      ? `¡${infoDescuento.valor}% de descuento aplicado!`
+                      : `¡$${infoDescuento.valor.toLocaleString('es-CL')} de descuento aplicado!`}
+                  </p>
+                )}
+                {descuentoError && (
+                  <p className="text-red-500 text-sm mt-2">{descuentoError}</p>
+                )}
               </div>
 
               {/* Resumen de totales */}

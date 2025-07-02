@@ -20,6 +20,10 @@ namespace Ferremas.Api.DTOs
         public string? CodigoDescuento { get; set; }
 
         public List<CarritoItemDTO> Items { get; set; } = new List<CarritoItemDTO>();
+
+        // Nuevo: tipo de documento y datos de empresa
+        public string? TipoDocumento { get; set; } // "boleta" o "factura"
+        public DatosEmpresaDTO? DatosEmpresa { get; set; }
     }
 
     public class CheckoutResponseDTO
@@ -75,5 +79,13 @@ namespace Ferremas.Api.DTOs
         public string? UrlPago { get; set; }
         public string? CodigoPago { get; set; }
         public string EstadoPago { get; set; } = string.Empty;
+    }
+
+    public class DatosEmpresaDTO
+    {
+        public string RazonSocial { get; set; } = string.Empty;
+        public string Rut { get; set; } = string.Empty;
+        public string Giro { get; set; } = string.Empty;
+        public string Direccion { get; set; } = string.Empty;
     }
 } 

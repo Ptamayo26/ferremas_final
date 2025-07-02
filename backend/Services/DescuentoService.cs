@@ -24,7 +24,8 @@ namespace Ferremas.Api.Services
                 {
                     Id = d.Id,
                     Codigo = d.Codigo,
-                    Porcentaje = d.Porcentaje,
+                    Tipo = d.Tipo,
+                    Valor = d.Valor,
                     FechaInicio = d.FechaInicio,
                     FechaFin = d.FechaFin,
                     Activo = d.Activo
@@ -43,7 +44,8 @@ namespace Ferremas.Api.Services
             {
                 Id = d.Id,
                 Codigo = d.Codigo,
-                Porcentaje = d.Porcentaje,
+                Tipo = d.Tipo,
+                Valor = d.Valor,
                 FechaInicio = d.FechaInicio,
                 FechaFin = d.FechaFin,
                 Activo = d.Activo
@@ -55,7 +57,8 @@ namespace Ferremas.Api.Services
             var descuento = new Descuento
             {
                 Codigo = dto.Codigo,
-                Porcentaje = dto.Porcentaje,
+                Tipo = dto.Tipo,
+                Valor = dto.Valor,
                 FechaInicio = dto.FechaInicio,
                 FechaFin = dto.FechaFin,
                 Activo = true
@@ -68,7 +71,8 @@ namespace Ferremas.Api.Services
             {
                 Id = descuento.Id,
                 Codigo = descuento.Codigo,
-                Porcentaje = descuento.Porcentaje,
+                Tipo = descuento.Tipo,
+                Valor = descuento.Valor,
                 FechaInicio = descuento.FechaInicio,
                 FechaFin = descuento.FechaFin,
                 Activo = descuento.Activo
@@ -93,7 +97,8 @@ namespace Ferremas.Api.Services
             {
                 Id = d.Id,
                 Codigo = d.Codigo,
-                Porcentaje = d.Porcentaje,
+                Tipo = d.Tipo,
+                Valor = d.Valor,
                 FechaInicio = d.FechaInicio,
                 FechaFin = d.FechaFin,
                 Activo = d.Activo
@@ -105,7 +110,8 @@ namespace Ferremas.Api.Services
             var d = await _context.Descuentos.FindAsync(id);
             if (d == null) return false;
             d.Codigo = dto.Codigo;
-            d.Porcentaje = dto.Porcentaje;
+            d.Tipo = dto.Tipo;
+            d.Valor = dto.Valor;
             d.FechaInicio = dto.FechaInicio;
             d.FechaFin = dto.FechaFin;
             await _context.SaveChangesAsync();

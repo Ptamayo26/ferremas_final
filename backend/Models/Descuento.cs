@@ -12,6 +12,12 @@ namespace Ferremas.Api.Models
         [Required]
         public decimal Porcentaje { get; set; }
 
+        [Required]
+        public string Tipo { get; set; } = "porcentaje"; // 'porcentaje' o 'monto'
+
+        [Required]
+        public decimal Valor { get; set; } // porcentaje (ej: 10 para 10%) o monto fijo
+
         public DateTime FechaInicio { get; set; }
 
         public DateTime FechaFin { get; set; }

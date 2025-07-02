@@ -24,6 +24,9 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using System.Linq;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using QuestPDF;
+
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 

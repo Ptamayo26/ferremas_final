@@ -17,10 +17,12 @@ namespace Ferremas.Api.Controllers
     public class CheckoutController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IDescuentoService _descuentoService;
 
-        public CheckoutController(AppDbContext context)
+        public CheckoutController(AppDbContext context, IDescuentoService descuentoService)
         {
             _context = context;
+            _descuentoService = descuentoService;
         }
 
         [HttpGet("resumen")]
@@ -206,10 +208,25 @@ namespace Ferremas.Api.Controllers
 
                 // Calcular totales
                 var subtotal = carritoItems.Sum(c => c.ProductoPrecio * c.Cantidad);
-                var descuento = 0m; // Por ahora sin descuentos
-                var impuestos = subtotal * 0.19m; // IVA 19%
+                decimal descuento = 0m;
+                if (!string.IsNullOrEmpty(dto.CodigoDescuento))
+                {
+                    var desc = await _descuentoService.ObtenerPorCodigo(dto.CodigoDescuento);
+                    if (desc != null && desc.Activo)
+                    {
+                        if (desc.Tipo == "porcentaje")
+                        {
+                            descuento = Math.Round(subtotal * (desc.Valor / 100m), 0);
+                        }
+                        else if (desc.Tipo == "monto")
+                        {
+                            descuento = Math.Min(desc.Valor, subtotal); // No puede ser mayor al subtotal
+                        }
+                    }
+                }
+                var impuestos = (subtotal - descuento) * 0.19m; // IVA 19% sobre el neto
                 var envio = 0m; // Por ahora sin costo de envío
-                var total = subtotal + impuestos + envio - descuento;
+                var total = subtotal - descuento + impuestos + envio;
 
                 // Crear el pedido
                 var pedido = new Pedido
@@ -235,6 +252,21 @@ namespace Ferremas.Api.Controllers
 
                 _context.Pedidos.Add(pedido);
                 await _context.SaveChangesAsync();
+
+                // Guardar datos de empresa si corresponde
+                if (dto.TipoDocumento == "factura" && dto.DatosEmpresa != null)
+                {
+                    var datosEmpresa = new DatosFacturaEmpresa
+                    {
+                        PedidoId = pedido.Id,
+                        RazonSocial = dto.DatosEmpresa.RazonSocial,
+                        Rut = dto.DatosEmpresa.Rut,
+                        Giro = dto.DatosEmpresa.Giro,
+                        Direccion = dto.DatosEmpresa.Direccion
+                    };
+                    _context.Add(datosEmpresa);
+                    await _context.SaveChangesAsync();
+                }
 
                 // Generar número de pedido
                 var numeroPedido = $"PED-{pedido.Id:D6}";

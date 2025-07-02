@@ -24,5 +24,12 @@ export const checkoutService = {
   async procesarPago(data: ProcesarPagoRequestDTO): Promise<ProcesarPagoResponseDTO> {
     const response = await apiClient.post<ProcesarPagoResponseDTO>('/api/Checkout/pago', data);
     return response.data;
+  },
+
+  // Validar código de descuento
+  async validarCodigoDescuento(codigo: string) {
+    const response = await fetch(`/api/Descuentos/codigo/${codigo}`);
+    if (!response.ok) throw new Error('Código de descuento inválido');
+    return await response.json();
   }
 }; 
