@@ -306,6 +306,13 @@ const CatalogoProductos: React.FC = () => {
         </div>
       </div>
 
+      {/* Código de descuento */}
+      <div className="w-full flex justify-center mb-4">
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded shadow text-center font-semibold">
+          Código de descuento: <span className="font-bold">OFERTA2X1</span> — ¡Utilízalo en el pago del carrito!
+        </div>
+      </div>
+
       {/* Productos destacados / Últimos vistos */}
       <div className="mb-8">
         <h3 className="text-xl font-bold mb-4 text-ferremas-primary">Productos Destacados</h3>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { CarritoItemDTO, CarritoResumenDTO } from '../../types/api';
+import type { ProductoResponseDTO } from '../../types/api';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import Notification from '../ui/Notification';
 import { useNavigate } from 'react-router-dom';
@@ -49,10 +50,29 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     message?: string;
   }>({ isOpen: false, type: 'info', title: '' });
 
+  // Estados para descuento y envío
+  const [codigoDescuento, setCodigoDescuento] = useState('');
+  const [descuentoAplicado, setDescuentoAplicado] = useState(false);
+  const [mensajeDescuento, setMensajeDescuento] = useState('');
+  const [montoDescuento, setMontoDescuento] = useState(0);
+
+  const [nombreEnvio, setNombreEnvio] = useState('');
+  const [direccionEnvio, setDireccionEnvio] = useState('');
+  const [ciudadEnvio, setCiudadEnvio] = useState('');
+  const [metodoEnvio, setMetodoEnvio] = useState('');
+  const [costoEnvio, setCostoEnvio] = useState(0);
+
+  const [productos, setProductos] = useState<ProductoResponseDTO[]>([]);
+
   const navigate = useNavigate ? useNavigate() : null;
 
   // Determinar si se debe usar la API o localStorage
   const usarApi = isAuthenticated && user && (user.rol.toLowerCase() === 'cliente' || user.rol.toUpperCase() === 'CLIENT');
+
+  // Agregar estados para RUT y Correo
+  const [rutEnvio, setRutEnvio] = useState('');
+  const [correoEnvio, setCorreoEnvio] = useState('');
+  const [erroresEnvio, setErroresEnvio] = useState<string[]>([]);
 
   // Cargar carrito según autenticación
   useEffect(() => {
@@ -67,6 +87,11 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
       setLoading(false);
     }
   }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    // Obtener productos al cargar el carrito
+    api.getProductos().then(setProductos);
+  }, []);
 
   const fetchCarrito = async () => {
     if (!isAuthenticated) {
@@ -244,20 +269,31 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
   };
 
   const handlePagar = async () => {
+    const nuevosErrores: string[] = [];
+    if (!rutEnvio.trim()) nuevosErrores.push('El RUT es obligatorio.');
+    if (!correoEnvio.trim()) nuevosErrores.push('El correo es obligatorio.');
+    setErroresEnvio(nuevosErrores);
+    if (nuevosErrores.length > 0) return;
+
     const monto = resumen?.total ?? total;
     setPagarLoading(true);
     try {
-      // Procesar el checkout y obtener el ID real del pedido
+      const direccionManual = nombreEnvio || direccionEnvio || ciudadEnvio;
       const checkoutData = {
         clienteId: user?.id ?? 0,
-        direccionId: 1, // Cambia esto por el ID real de la dirección seleccionada si lo tienes
+        direccionId: direccionManual ? 0 : 1,
         metodoPago: 'WEBPAY',
         observaciones: '',
-        // Para pedidos anónimos, incluir los items del carrito
+        calle: nombreEnvio,
+        numero: direccionEnvio,
+        departamento: '',
+        comuna: ciudadEnvio,
+        region: '',
+        codigoPostal: '',
         ...(user?.id ? {} : {
           items: carrito.map(item => ({
             id: item.id,
-            productoId: item.id, // Asumiendo que el id del item es el mismo que el productoId
+            productoId: item.id,
             productoNombre: item.nombre,
             productoPrecio: item.precio,
             precioOriginal: item.precio,
@@ -296,6 +332,56 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
       setPagarLoading(false);
     }
   };
+
+  // Lógica para aplicar descuento
+  const aplicarDescuento = () => {
+    if (codigoDescuento.trim().toUpperCase() === 'OFERTA2X1') {
+      // Buscar productos de las categorías elegibles
+      const categoriasElegibles = ['Herramientas Manuales', 'Herramientas Eléctricas', 'Jardinería'];
+      let descuento = 0;
+      if (usarApi) {
+        descuento = items
+          .filter(item => {
+            const prod = productos.find(p => p.id === item.productoId);
+            return prod && categoriasElegibles.includes(prod.categoriaNombre || '');
+          })
+          .reduce((acc, item) => {
+            const prod = productos.find(p => p.id === item.productoId);
+            return acc + (prod ? prod.precio : item.productoPrecio) * item.cantidad;
+          }, 0) * 0.5;
+      } else {
+        descuento = carrito
+          .filter(item => {
+            const prod = productos.find(p => p.id === item.id);
+            return prod && categoriasElegibles.includes(prod.categoriaNombre || '');
+          })
+          .reduce((acc, item) => {
+            const prod = productos.find(p => p.id === item.id);
+            return acc + (prod ? prod.precio : item.precio) * item.cantidad;
+          }, 0) * 0.5;
+      }
+      if (descuento > 0) {
+        setDescuentoAplicado(true);
+        setMontoDescuento(Math.round(descuento));
+        setMensajeDescuento('¡Descuento aplicado correctamente!');
+      } else {
+        setDescuentoAplicado(false);
+        setMontoDescuento(0);
+        setMensajeDescuento('No hay productos elegibles para el descuento.');
+      }
+    } else {
+      setDescuentoAplicado(false);
+      setMontoDescuento(0);
+      setMensajeDescuento('Código inválido.');
+    }
+  };
+
+  // Lógica para costo de envío
+  useEffect(() => {
+    if (metodoEnvio === 'Chilexpress') setCostoEnvio(4990);
+    else if (metodoEnvio === 'Starken') setCostoEnvio(3990);
+    else setCostoEnvio(0);
+  }, [metodoEnvio]);
 
   if (loading) return <div>Cargando carrito...</div>;
 
@@ -412,6 +498,65 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
               ))}
             </div>
 
+            {/* Campo para código de descuento */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Código de descuento</label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={codigoDescuento}
+                  onChange={e => setCodigoDescuento(e.target.value)}
+                  placeholder="Ingresa tu código"
+                  className="input-field focus-ring"
+                />
+                <button
+                  onClick={aplicarDescuento}
+                  className="bg-ferremas-primary text-white px-4 py-2 rounded hover:bg-ferremas-primary-dark"
+                >
+                  Aplicar
+                </button>
+              </div>
+              {mensajeDescuento && (
+                <div className={`mt-2 text-sm ${descuentoAplicado ? 'text-green-600' : 'text-red-500'}`}>{mensajeDescuento}</div>
+              )}
+            </div>
+
+            {/* Formulario de envío */}
+            <div className="mb-4 p-4 border rounded-lg bg-gray-50">
+              <h4 className="font-bold mb-2">Datos de Envío</h4>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">RUT <span className="text-red-500">*</span></label>
+                <input type="text" value={rutEnvio} onChange={e => setRutEnvio(e.target.value)} className="input-field focus-ring w-full" required />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Correo <span className="text-red-500">*</span></label>
+                <input type="email" value={correoEnvio} onChange={e => setCorreoEnvio(e.target.value)} className="input-field focus-ring w-full" required />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                <input type="text" value={nombreEnvio} onChange={e => setNombreEnvio(e.target.value)} className="input-field focus-ring w-full" />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                <input type="text" value={direccionEnvio} onChange={e => setDireccionEnvio(e.target.value)} className="input-field focus-ring w-full" />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                <input type="text" value={ciudadEnvio} onChange={e => setCiudadEnvio(e.target.value)} className="input-field focus-ring w-full" />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Método de envío</label>
+                <select value={metodoEnvio} onChange={e => setMetodoEnvio(e.target.value)} className="input-field focus-ring w-full">
+                  <option value="">Selecciona un método</option>
+                  <option value="Chilexpress">Chilexpress</option>
+                  <option value="Starken">Starken</option>
+                </select>
+              </div>
+              {costoEnvio > 0 && (
+                <div className="text-sm text-gray-700 mt-2">Costo de envío: <span className="font-bold">${costoEnvio.toLocaleString('es-CL')}</span></div>
+              )}
+            </div>
+
             {/* Resumen */}
             {resumen && (
               <div className="border-t pt-4 mb-6">
@@ -419,9 +564,21 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   <span>Subtotal:</span>
                   <span>${resumen.subtotal?.toLocaleString('es-CL') || '0'}</span>
                 </div>
+                {descuentoAplicado && (
+                  <div className="flex justify-between items-center mb-2 text-green-600">
+                    <span>Descuento aplicado:</span>
+                    <span>- ${montoDescuento.toLocaleString('es-CL')}</span>
+                  </div>
+                )}
+                {costoEnvio > 0 && (
+                  <div className="flex justify-between items-center mb-2 text-blue-600">
+                    <span>Envío ({metodoEnvio}):</span>
+                    <span>+ ${costoEnvio.toLocaleString('es-CL')}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center font-bold text-lg">
                   <span>Total:</span>
-                  <span>${resumen.total?.toLocaleString('es-CL') || '0'}</span>
+                  <span>${(resumen.total - (descuentoAplicado ? montoDescuento : 0) + costoEnvio).toLocaleString('es-CL') || '0'}</span>
                 </div>
               </div>
             )}
@@ -594,6 +751,65 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
               ))}
             </div>
 
+            {/* Campo para código de descuento */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Código de descuento</label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={codigoDescuento}
+                  onChange={e => setCodigoDescuento(e.target.value)}
+                  placeholder="Ingresa tu código"
+                  className="input-field focus-ring"
+                />
+                <button
+                  onClick={aplicarDescuento}
+                  className="bg-ferremas-primary text-white px-4 py-2 rounded hover:bg-ferremas-primary-dark"
+                >
+                  Aplicar
+                </button>
+              </div>
+              {mensajeDescuento && (
+                <div className={`mt-2 text-sm ${descuentoAplicado ? 'text-green-600' : 'text-red-500'}`}>{mensajeDescuento}</div>
+              )}
+            </div>
+
+            {/* Formulario de envío */}
+            <div className="mb-4 p-4 border rounded-lg bg-gray-50">
+              <h4 className="font-bold mb-2">Datos de Envío</h4>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">RUT <span className="text-red-500">*</span></label>
+                <input type="text" value={rutEnvio} onChange={e => setRutEnvio(e.target.value)} className="input-field focus-ring w-full" required />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Correo <span className="text-red-500">*</span></label>
+                <input type="email" value={correoEnvio} onChange={e => setCorreoEnvio(e.target.value)} className="input-field focus-ring w-full" required />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                <input type="text" value={nombreEnvio} onChange={e => setNombreEnvio(e.target.value)} className="input-field focus-ring w-full" />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                <input type="text" value={direccionEnvio} onChange={e => setDireccionEnvio(e.target.value)} className="input-field focus-ring w-full" />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                <input type="text" value={ciudadEnvio} onChange={e => setCiudadEnvio(e.target.value)} className="input-field focus-ring w-full" />
+              </div>
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Método de envío</label>
+                <select value={metodoEnvio} onChange={e => setMetodoEnvio(e.target.value)} className="input-field focus-ring w-full">
+                  <option value="">Selecciona un método</option>
+                  <option value="Chilexpress">Chilexpress</option>
+                  <option value="Starken">Starken</option>
+                </select>
+              </div>
+              {costoEnvio > 0 && (
+                <div className="text-sm text-gray-700 mt-2">Costo de envío: <span className="font-bold">${costoEnvio.toLocaleString('es-CL')}</span></div>
+              )}
+            </div>
+
             {/* Resumen */}
             {resumen && (
               <div className="border-t pt-4 mb-6">
@@ -601,9 +817,21 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   <span>Subtotal:</span>
                   <span>${resumen.subtotal?.toLocaleString('es-CL') || '0'}</span>
                 </div>
+                {descuentoAplicado && (
+                  <div className="flex justify-between items-center mb-2 text-green-600">
+                    <span>Descuento aplicado:</span>
+                    <span>- ${montoDescuento.toLocaleString('es-CL')}</span>
+                  </div>
+                )}
+                {costoEnvio > 0 && (
+                  <div className="flex justify-between items-center mb-2 text-blue-600">
+                    <span>Envío ({metodoEnvio}):</span>
+                    <span>+ ${costoEnvio.toLocaleString('es-CL')}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center font-bold text-lg">
                   <span>Total:</span>
-                  <span>${resumen.total?.toLocaleString('es-CL') || '0'}</span>
+                  <span>${(resumen.total - (descuentoAplicado ? montoDescuento : 0) + costoEnvio).toLocaleString('es-CL') || '0'}</span>
                 </div>
               </div>
             )}

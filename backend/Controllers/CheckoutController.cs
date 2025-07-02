@@ -138,15 +138,15 @@ namespace Ferremas.Api.Controllers
                     _context.Clientes.Add(cliente);
                     await _context.SaveChangesAsync();
 
-                    // Crear dirección temporal
+                    // Crear dirección temporal con datos del DTO
                     direccion = new Direccion
                     {
-                        Calle = "Sin dirección",
-                        Numero = "S/N",
-                        Departamento = "",
-                        Comuna = "",
-                        Region = "",
-                        CodigoPostal = "",
+                        Calle = dto.Calle ?? "Sin dirección",
+                        Numero = dto.Numero ?? "S/N",
+                        Departamento = dto.Departamento ?? "",
+                        Comuna = dto.Comuna ?? "",
+                        Region = dto.Region ?? "",
+                        CodigoPostal = dto.CodigoPostal ?? "",
                         EsPrincipal = true,
                         FechaCreacion = DateTime.UtcNow,
                         FechaModificacion = DateTime.UtcNow,
@@ -200,10 +200,33 @@ namespace Ferremas.Api.Controllers
                     if (cliente == null)
                         return NotFound("Cliente no encontrado");
 
-                    // Verificar que la dirección existe y pertenece al cliente
-                    direccion = cliente.Usuario?.Direcciones?.FirstOrDefault(d => d.Id == dto.DireccionId);
-                    if (direccion == null)
-                        return NotFound("Dirección de envío no encontrada");
+                    // Si se envía DireccionId, usar la lógica actual
+                    if (dto.DireccionId != null && dto.DireccionId > 0)
+                    {
+                        direccion = cliente.Usuario?.Direcciones?.FirstOrDefault(d => d.Id == dto.DireccionId);
+                        if (direccion == null)
+                            return NotFound("Dirección de envío no encontrada");
+                    }
+                    else
+                    {
+                        // Crear dirección con los datos manuales del DTO
+                        direccion = new Direccion
+                        {
+                            Calle = dto.Calle ?? "Sin dirección",
+                            Numero = dto.Numero ?? "S/N",
+                            Departamento = dto.Departamento ?? "",
+                            Comuna = dto.Comuna ?? "",
+                            Region = dto.Region ?? "",
+                            CodigoPostal = dto.CodigoPostal ?? "",
+                            EsPrincipal = false,
+                            FechaCreacion = DateTime.UtcNow,
+                            FechaModificacion = DateTime.UtcNow,
+                            ClienteId = cliente.Id,
+                            UsuarioId = usuarioId
+                        };
+                        _context.Direcciones.Add(direccion);
+                        await _context.SaveChangesAsync();
+                    }
                 }
 
                 // Calcular totales

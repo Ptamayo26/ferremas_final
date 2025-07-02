@@ -9,8 +9,7 @@ namespace Ferremas.Api.DTOs
         [Required]
         public int ClienteId { get; set; }
         
-        [Required]
-        public int DireccionId { get; set; }
+        public int? DireccionId { get; set; } // Ahora opcional
         
         [Required]
         public string MetodoPago { get; set; } = string.Empty; // "mercadopago", "efectivo", "transferencia"
@@ -24,6 +23,14 @@ namespace Ferremas.Api.DTOs
         // Nuevo: tipo de documento y datos de empresa
         public string? TipoDocumento { get; set; } // "boleta" o "factura"
         public DatosEmpresaDTO? DatosEmpresa { get; set; }
+
+        // Campos para dirección manual
+        public string? Calle { get; set; }
+        public string? Numero { get; set; }
+        public string? Departamento { get; set; }
+        public string? Comuna { get; set; }
+        public string? Region { get; set; }
+        public string? CodigoPostal { get; set; }
     }
 
     public class CheckoutResponseDTO
