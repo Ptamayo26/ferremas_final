@@ -63,6 +63,8 @@ especificaciones?: string;
 fechaCreacion: Date;
 fechaModificacion?: Date;
 activo: boolean;
+precioOriginal: number;
+precioConDescuento: number;
 }
 
 export interface ProductoCreateDTO {
@@ -334,6 +336,8 @@ export interface CarritoItemDTO {
   productoId: number;
   productoNombre: string;
   productoPrecio: number;
+  precioOriginal: number;
+  precioConDescuento: number;
   productoImagen?: string;
   cantidad: number;
   subtotal: number;

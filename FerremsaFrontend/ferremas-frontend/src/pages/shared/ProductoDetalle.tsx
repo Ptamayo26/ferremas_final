@@ -41,9 +41,11 @@ const ProductoDetalle: React.FC = () => {
         console.log('Producto agregado al carrito');
     };
 
-    // Simula un descuento del 20% si el precio es mayor a 5000
-    const tieneDescuento = producto && producto.precio > 5000;
-    const precioDescuento = tieneDescuento ? Math.round(producto!.precio * 0.8) : producto?.precio;
+    // Verificar si el producto tiene descuento por categoría
+    const tieneDescuento = producto && producto.precioConDescuento != null && producto.precioOriginal != null && producto.precioConDescuento < producto.precioOriginal;
+    const porcentajeDescuento = tieneDescuento && producto.precioOriginal > 0 
+        ? Math.round(((producto.precioOriginal - producto.precioConDescuento) / producto.precioOriginal) * 100)
+        : 0;
 
     if (loading) {
         return (
@@ -120,7 +122,7 @@ const ProductoDetalle: React.FC = () => {
                             }}
                         />
                         {tieneDescuento && (
-                            <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">20% DCTO</span>
+                            <span className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">{porcentajeDescuento}% DCTO</span>
                         )}
                     </div>
                 </div>
@@ -135,9 +137,13 @@ const ProductoDetalle: React.FC = () => {
                         </div>
                         {/* Precio */}
                         <div className="mb-4 flex items-end gap-4">
-                            <div className="text-4xl font-bold text-red-500">${precioDescuento?.toLocaleString('es-CL')}</div>
-                            {tieneDescuento && (
-                                <div className="text-lg text-gray-400 line-through">${producto.precio.toLocaleString('es-CL')}</div>
+                            {tieneDescuento ? (
+                                <>
+                                    <div className="text-4xl font-bold text-red-500">${producto.precioConDescuento?.toLocaleString('es-CL')}</div>
+                                    <div className="text-lg text-gray-400 line-through">${producto.precioOriginal?.toLocaleString('es-CL')}</div>
+                                </>
+                            ) : (
+                                <div className="text-4xl font-bold text-ferremas-primary">${producto.precioOriginal?.toLocaleString('es-CL')}</div>
                             )}
                         </div>
                         {/* Selector de cantidad */}

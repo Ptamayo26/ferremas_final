@@ -19,5 +19,7 @@ namespace Ferremas.Api.DTOs
         public DateTime FechaCreacion { get; set; }
         public DateTime? FechaModificacion { get; set; }
         public bool Activo { get; set; }
+        public decimal PrecioOriginal { get; set; }
+        public decimal PrecioConDescuento { get; set; }
     }
 } 

@@ -36,6 +36,7 @@ namespace Ferremas.Api.Controllers
 
                 var carritoItems = await _context.Carrito
                     .Include(c => c.Producto)
+                        .ThenInclude(p => p.Categoria)
                     .Where(c => c.UsuarioId == usuarioId && c.Activo)
                     .OrderByDescending(c => c.FechaAgregado)
                     .Select(c => new CarritoItemDTO
@@ -44,6 +45,10 @@ namespace Ferremas.Api.Controllers
                         ProductoId = c.ProductoId,
                         ProductoNombre = c.Producto.Nombre,
                         ProductoPrecio = c.Producto.Precio,
+                        PrecioOriginal = c.Producto.Precio,
+                        PrecioConDescuento = c.Producto.Categoria != null && c.Producto.Categoria.DescuentoPorcentaje > 0
+                            ? Math.Round(c.Producto.Precio * (1 - (c.Producto.Categoria.DescuentoPorcentaje / 100)), 0)
+                            : c.Producto.Precio,
                         ProductoImagen = c.Producto.ImagenUrl,
                         Cantidad = c.Cantidad,
                         Subtotal = c.Producto.Precio * c.Cantidad,
@@ -122,6 +127,10 @@ namespace Ferremas.Api.Controllers
                         ProductoId = c.ProductoId,
                         ProductoNombre = c.Producto.Nombre,
                         ProductoPrecio = c.Producto.Precio,
+                        PrecioOriginal = c.Producto.Precio,
+                        PrecioConDescuento = c.Producto.Categoria != null && c.Producto.Categoria.DescuentoPorcentaje > 0
+                            ? Math.Round(c.Producto.Precio * (1 - (c.Producto.Categoria.DescuentoPorcentaje / 100)), 0)
+                            : c.Producto.Precio,
                         ProductoImagen = c.Producto.ImagenUrl,
                         Cantidad = c.Cantidad,
                         Subtotal = c.Producto.Precio * c.Cantidad,
@@ -180,6 +189,10 @@ namespace Ferremas.Api.Controllers
                     ProductoId = carritoItem.ProductoId,
                     ProductoNombre = carritoItem.Producto.Nombre,
                     ProductoPrecio = carritoItem.Producto.Precio,
+                    PrecioOriginal = carritoItem.Producto.Precio,
+                    PrecioConDescuento = carritoItem.Producto.Categoria != null && carritoItem.Producto.Categoria.DescuentoPorcentaje > 0
+                        ? Math.Round(carritoItem.Producto.Precio * (1 - (carritoItem.Producto.Categoria.DescuentoPorcentaje / 100)), 0)
+                        : carritoItem.Producto.Precio,
                     ProductoImagen = carritoItem.Producto.ImagenUrl,
                     Cantidad = carritoItem.Cantidad,
                     Subtotal = carritoItem.Producto.Precio * carritoItem.Cantidad,

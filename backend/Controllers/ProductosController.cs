@@ -48,7 +48,11 @@ namespace Ferremas.Api.Controllers
                         Especificaciones = p.Especificaciones ?? "",
                         FechaCreacion = p.FechaCreacion,
                         FechaModificacion = p.FechaModificacion,
-                        Activo = p.Activo
+                        Activo = p.Activo,
+                        PrecioOriginal = p.Precio,
+                        PrecioConDescuento = p.Categoria != null && p.Categoria.DescuentoPorcentaje > 0
+                            ? Math.Round(p.Precio * (1 - (p.Categoria.DescuentoPorcentaje / 100)), 0)
+                            : p.Precio
                     })
                     .ToListAsync();
 

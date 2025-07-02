@@ -391,9 +391,20 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
                         </div>
                         <div>
                           <p className="font-medium">{item.productoNombre}</p>
-                          <p className="text-sm text-gray-600">
-                            {item.cantidad} x ${item.productoPrecio.toFixed(2)}
-                          </p>
+                          {item.precioConDescuento != null && item.precioOriginal != null && item.precioConDescuento < item.precioOriginal ? (
+                            <div className="text-sm text-gray-600">
+                              <span className="text-gray-400 line-through mr-2">
+                                {item.cantidad} x ${item.precioOriginal?.toFixed(2)}
+                              </span>
+                              <span className="text-ferremas-primary font-semibold">
+                                {item.cantidad} x ${item.precioConDescuento?.toFixed(2)}
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-600">
+                              {item.cantidad} x ${item.productoPrecio.toFixed(2)}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <p className="font-semibold">${item.subtotal.toFixed(2)}</p>

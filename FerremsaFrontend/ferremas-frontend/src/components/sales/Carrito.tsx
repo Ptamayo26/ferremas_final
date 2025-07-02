@@ -260,6 +260,8 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
             productoId: item.id, // Asumiendo que el id del item es el mismo que el productoId
             productoNombre: item.nombre,
             productoPrecio: item.precio,
+            precioOriginal: item.precio,
+            precioConDescuento: item.precio,
             productoImagen: item.imagenUrl,
             cantidad: item.cantidad,
             subtotal: item.precio * item.cantidad,
@@ -346,7 +348,18 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   />
                   <div className="flex-grow">
                     <h3 className="font-semibold text-gray-900">{usarApi ? (item as CarritoItemDTO).productoNombre : (item as CarritoItem).nombre}</h3>
-                    <p className="text-gray-600">${(usarApi ? (item as CarritoItemDTO).productoPrecio : (item as CarritoItem).precio).toLocaleString('es-CL')}</p>
+                    {usarApi && (item as CarritoItemDTO).precioConDescuento != null && (item as CarritoItemDTO).precioOriginal != null && (item as CarritoItemDTO).precioConDescuento < (item as CarritoItemDTO).precioOriginal ? (
+                      <div className="text-gray-600">
+                        <span className="text-gray-400 line-through text-sm mr-2">
+                          ${(item as CarritoItemDTO).precioOriginal?.toLocaleString('es-CL')}
+                        </span>
+                        <span className="text-ferremas-primary font-semibold">
+                          ${(item as CarritoItemDTO).precioConDescuento?.toLocaleString('es-CL')}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-gray-600">${(usarApi ? (item as CarritoItemDTO).productoPrecio : (item as CarritoItem).precio).toLocaleString('es-CL')}</p>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     {usarApi ? (
@@ -517,7 +530,18 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   />
                   <div className="flex-grow">
                     <h3 className="font-semibold text-gray-900">{usarApi ? (item as CarritoItemDTO).productoNombre : (item as CarritoItem).nombre}</h3>
-                    <p className="text-gray-600">${(usarApi ? (item as CarritoItemDTO).productoPrecio : (item as CarritoItem).precio).toLocaleString('es-CL')}</p>
+                    {usarApi && (item as CarritoItemDTO).precioConDescuento != null && (item as CarritoItemDTO).precioOriginal != null && (item as CarritoItemDTO).precioConDescuento < (item as CarritoItemDTO).precioOriginal ? (
+                      <div className="text-gray-600">
+                        <span className="text-gray-400 line-through text-sm mr-2">
+                          ${(item as CarritoItemDTO).precioOriginal?.toLocaleString('es-CL')}
+                        </span>
+                        <span className="text-ferremas-primary font-semibold">
+                          ${(item as CarritoItemDTO).precioConDescuento?.toLocaleString('es-CL')}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-gray-600">${(usarApi ? (item as CarritoItemDTO).productoPrecio : (item as CarritoItem).precio).toLocaleString('es-CL')}</p>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     {usarApi ? (

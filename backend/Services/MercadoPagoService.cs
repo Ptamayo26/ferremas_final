@@ -27,7 +27,7 @@ namespace Ferremas.Api.Services
         }
 
         // 🎯 MÉTODO SIMULADO - SIEMPRE FUNCIONA
-        public async Task<MercadoPagoPreferenceResponse> CrearPreferenciaPago(PagoCreateDTO pagoDto, string emailCliente = null)
+        public async Task<MercadoPagoPreferenceResponse> CrearPreferenciaPago(PagoCreateDTO pagoDto, string? emailCliente = null)
         {
             await Task.Delay(100); // Simular llamada a API
 

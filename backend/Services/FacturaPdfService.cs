@@ -7,10 +7,6 @@ using System.IO;
 using System.Linq;
 using QuestPDF.Drawing;
 using QuestPDF.Elements;
-using QuestPDF.Previewer;
-using QuestPDF.ReportSample.Layouts;
-using QuestPDF.ReportSample.Models;
-using QuestPDF.ReportSample.Shared;
 
 namespace Ferremas.Api.Services
 {

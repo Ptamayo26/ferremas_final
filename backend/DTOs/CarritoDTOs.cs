@@ -9,6 +9,8 @@ namespace Ferremas.Api.DTOs
         public int ProductoId { get; set; }
         public string ProductoNombre { get; set; } = string.Empty;
         public decimal ProductoPrecio { get; set; }
+        public decimal PrecioOriginal { get; set; }
+        public decimal PrecioConDescuento { get; set; }
         public string? ProductoImagen { get; set; }
         public int Cantidad { get; set; }
         public decimal Subtotal { get; set; }

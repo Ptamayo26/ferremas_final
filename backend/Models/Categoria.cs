@@ -37,6 +37,9 @@ namespace Ferremas.Api.Models
         [Column("fecha_modificacion")]
         public DateTime? FechaModificacion { get; set; }
 
+        [Column("descuento_porcentaje")]
+        public decimal DescuentoPorcentaje { get; set; } = 0; // Porcentaje de descuento para la categoría
+
         // Navigation properties
         [ForeignKey("CategoriaPadreId")]
         public virtual Categoria? CategoriaPadre { get; set; }

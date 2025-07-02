@@ -325,7 +325,22 @@ const CatalogoProductos: React.FC = () => {
                 />
                 <span className="text-ferremas-primary font-bold text-sm mb-1">{prod.nombre}</span>
                 <span className="text-xs text-gray-500 mb-1">{prod.marcaNombre || 'Sin marca'}</span>
-                <span className="text-ferremas-primary font-semibold mb-1">${prod.precio?.toLocaleString()}</span>
+                <span className="text-ferremas-primary font-semibold mb-1">
+                  {prod.precioConDescuento != null && prod.precioOriginal != null && prod.precioConDescuento < prod.precioOriginal ? (
+                    <>
+                      <span className="text-gray-500 line-through mr-2 text-sm">
+                        ${prod.precioOriginal?.toLocaleString()}
+                      </span>
+                      <span className="text-ferremas-primary font-bold text-lg">
+                        ${prod.precioConDescuento?.toLocaleString()}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-ferremas-primary font-bold text-lg">
+                      ${prod.precioOriginal?.toLocaleString()}
+                    </span>
+                  )}
+                </span>
               </div>
             ))}
           </div>
@@ -473,7 +488,22 @@ const CatalogoProductos: React.FC = () => {
                   <div className="p-4 w-full">
                     <h2 className="text-xl font-bold mb-2">{producto.nombre}</h2>
                     <p className="text-gray-600 mb-2">{producto.descripcion}</p>
-                    <p className="text-ferremas-primary font-semibold mb-2">${producto.precio}</p>
+                    {producto.precioConDescuento != null && producto.precioOriginal != null && producto.precioConDescuento < producto.precioOriginal ? (
+                      <div className="mb-2">
+                        <span className="text-gray-500 line-through mr-2 text-base">
+                          ${producto.precioOriginal?.toLocaleString()}
+                        </span>
+                        <span className="text-ferremas-primary font-bold text-xl">
+                          ${producto.precioConDescuento?.toLocaleString()}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="mb-2">
+                        <span className="text-ferremas-primary font-bold text-xl">
+                          ${producto.precioOriginal?.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                     <AddToCartButton 
                       productoId={producto.id}
                       productoNombre={producto.nombre}

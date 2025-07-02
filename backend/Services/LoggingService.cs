@@ -15,7 +15,7 @@ namespace Ferremas.Api.Services
         void LogDebug(string message, params object[] args);
         void LogCritical(Exception ex, string message, params object[] args);
         void LogTrace(string message, params object[] args);
-        void LogWithContext(string message, LogLevel level, Dictionary<string, object> context = null);
+        void LogWithContext(string message, LogLevel level, Dictionary<string, object>? context = null);
     }
 
     public class LoggingService : ILoggingService
@@ -59,7 +59,7 @@ namespace Ferremas.Api.Services
             _logger.LogTrace(message, args ?? Array.Empty<object>());
         }
 
-        public void LogWithContext(string message, LogLevel level, Dictionary<string, object> context = null)
+        public void LogWithContext(string message, LogLevel level, Dictionary<string, object>? context = null)
         {
             using (_logger.BeginScope(context ?? new Dictionary<string, object>()))
             {
