@@ -35,13 +35,13 @@ namespace Ferremas.Api.DTOs
     {
         public int Id { get; set; }
         public int PedidoId { get; set; }
-        public string DireccionDestino { get; set; }
-        public string ComunaDestino { get; set; }
-        public string RegionDestino { get; set; }
-        public string TelefonoContacto { get; set; }
-        public string NombreDestinatario { get; set; }
-        public string Estado { get; set; }
-        public string NumeroSeguimiento { get; set; }
+        public string DireccionDestino { get; set; } = string.Empty;
+        public string ComunaDestino { get; set; } = string.Empty;
+        public string RegionDestino { get; set; } = string.Empty;
+        public string TelefonoContacto { get; set; } = string.Empty;
+        public string NombreDestinatario { get; set; } = string.Empty;
+        public string Estado { get; set; } = string.Empty;
+        public string NumeroSeguimiento { get; set; } = string.Empty;
         public DateTime FechaCreacion { get; set; }
         public DateTime? FechaActualizacion { get; set; }
     }

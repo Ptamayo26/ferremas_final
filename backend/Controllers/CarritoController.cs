@@ -275,8 +275,11 @@ namespace Ferremas.Api.Controllers
                     .Where(c => c.UsuarioId == usuarioId && c.Activo)
                     .ToListAsync();
 
-                var totalItems = carritoItems.Sum(c => c.Cantidad);
-                var subtotal = carritoItems.Sum(c => c.Producto.Precio * c.Cantidad);
+                // Filtrar items cuyo producto sea nulo (por ejemplo, si fue eliminado)
+                var itemsValidos = carritoItems.Where(c => c.Producto != null).ToList();
+
+                var totalItems = itemsValidos.Sum(c => c.Cantidad);
+                var subtotal = itemsValidos.Sum(c => c.Producto.Precio * c.Cantidad);
                 var total = subtotal; // Por ahora sin impuestos ni descuentos
 
                 return Ok(new CarritoResumenDTO
@@ -284,7 +287,7 @@ namespace Ferremas.Api.Controllers
                     TotalItems = totalItems,
                     Subtotal = subtotal,
                     Total = total,
-                    CantidadProductos = carritoItems.Count
+                    CantidadProductos = itemsValidos.Count
                 });
             }
             catch (Exception ex)
@@ -295,7 +298,7 @@ namespace Ferremas.Api.Controllers
 
         private int? GetUsuarioIdFromToken()
         {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdClaim, out int userId))
                 return userId;
             return null;

@@ -25,7 +25,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initAuth = () => {
       const storedToken = authService.getToken();
       const storedUser = authService.getCurrentUser();
-      
       if (storedToken && storedUser) {
         setToken(storedToken);
         const appUser: Usuario = {
@@ -36,6 +35,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         setUser(appUser);
         setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setToken(null);
+        setIsAuthenticated(false);
       }
       setIsLoading(false);
     };

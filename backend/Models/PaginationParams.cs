@@ -18,7 +18,7 @@ namespace Ferremas.Api.Models
             set => _pageSize = value > MaxPageSize ? MaxPageSize : value < 1 ? 1 : value;
         }
 
-        public string SortBy { get; set; }
+        public string SortBy { get; set; } = string.Empty;
         public bool SortDescending { get; set; }
     }
 } 

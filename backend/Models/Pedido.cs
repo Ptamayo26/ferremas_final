@@ -50,6 +50,10 @@ namespace Ferremas.Api.Models
         [StringLength(50)]
         public string? NumeroPedido { get; set; }
         
+        [Column("nombre_cliente_temporal")]
+        [StringLength(100)]
+        public string? NombreClienteTemporal { get; set; }
+        
         // Navigation properties
         [ForeignKey("UsuarioId")]
         public virtual Usuario? Usuario { get; set; }

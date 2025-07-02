@@ -19,6 +19,7 @@ namespace Ferremas.Api.DTOs
         public DateTime FechaCreacion { get; set; }
         public DateTime? FechaModificacion { get; set; }
         public bool Activo { get; set; }
+        public string? NombreClienteTemporal { get; set; }
         public List<DetallePedidoResponseDTO> Detalles { get; set; } = new();
     }
 
@@ -35,6 +36,7 @@ namespace Ferremas.Api.DTOs
 
         public string? Observaciones { get; set; }
         public string? DireccionEntrega { get; set; }
+        public string? NombreClienteTemporal { get; set; }
         public List<DetallePedidoCreateDTO> Detalles { get; set; } = new();
     }
 

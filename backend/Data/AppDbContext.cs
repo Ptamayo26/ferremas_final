@@ -36,6 +36,7 @@ namespace Ferremas.Api.Data
         public DbSet<LogAuditoria> LogsAuditoria { get; set; } = null!;
         public DbSet<Carrito> Carrito { get; set; } = null!;
         public DbSet<DatosFacturaEmpresa> DatosFacturaEmpresa { get; set; }
+        public DbSet<ListaDeseos> ListasDeseos { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

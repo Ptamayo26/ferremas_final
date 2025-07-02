@@ -47,6 +47,12 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
   });
   const [empresaError, setEmpresaError] = useState('');
 
+  // 1. Estado para el nombre temporal
+  const [nombreTemporal, setNombreTemporal] = useState('');
+
+  // 2. Detectar si el usuario es anónimo (ajusta según tu lógica de autenticación)
+  const esAnonimo = !resumen?.cliente?.id || resumen.cliente.id === 0;
+
   const fetchResumenCheckout = async () => {
     try {
       setLoading(true);
@@ -120,7 +126,8 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
         observaciones: observaciones || undefined,
         tipoDocumento,
         datosEmpresa: tipoDocumento === 'factura' ? empresa : undefined,
-        codigoDescuento: descuentoAplicado || undefined
+        codigoDescuento: descuentoAplicado || undefined,
+        nombreClienteTemporal: esAnonimo ? nombreTemporal : undefined,
       };
 
       const response = await checkoutService.procesarCheckout(checkoutData);
@@ -367,6 +374,21 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
                   rows={3}
                 />
               </div>
+
+              {/* Mostrar campo de nombre si es anónimo */}
+              {esAnonimo && (
+                <div className="mb-4">
+                  <label className="block font-medium mb-1">Nombre:</label>
+                  <input
+                    type="text"
+                    value={nombreTemporal}
+                    onChange={e => setNombreTemporal(e.target.value)}
+                    required
+                    className="w-full p-2 border rounded"
+                    placeholder="Ingresa tu nombre"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Columna derecha - Resumen de productos y totales */}

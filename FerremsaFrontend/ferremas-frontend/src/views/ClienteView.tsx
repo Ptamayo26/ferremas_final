@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/api';
 import type { PedidoResponseDTO, ProductoResponseDTO } from '../types/api';
+import { useAuth } from '../context/AuthContext';
+import ClienteInfoCard from '../components/ui/ClienteInfoCard';
+import EditProfileModal from '../components/ui/EditProfileModal';
+import DireccionesModal from '../components/ui/DireccionesModal';
+import CambiarPasswordModal from '../components/ui/CambiarPasswordModal';
+import { getFavoritos } from '../services/products';
+
+// NUEVO: Tipo para los datos de perfil
+interface PerfilCliente {
+  nombre: string;
+  apellido?: string;
+  rut?: string;
+  correoElectronico?: string;
+  telefono?: string;
+  direcciones?: any[];
+  puntos?: number;
+}
 
 const ClienteView: React.FC = () => {
   const [pedidos, setPedidos] = useState<PedidoResponseDTO[]>([]);
@@ -13,6 +31,13 @@ const ClienteView: React.FC = () => {
     totalGastado: 0
   });
   const [productosCatalogo, setProductosCatalogo] = useState<ProductoResponseDTO[]>([]);
+  const [perfil, setPerfil] = useState<PerfilCliente | null>(null);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showDirecciones, setShowDirecciones] = useState(false);
+  const [showCambiarPassword, setShowCambiarPassword] = useState(false);
+  
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -20,19 +45,43 @@ const ClienteView: React.FC = () => {
         setLoading(true);
         setError(null);
 
+        // NUEVO: Obtener datos de perfil
+        try {
+          const perfilResponse = await apiClient.get<any>('/api/Clientes/mi-perfil');
+          setPerfil(perfilResponse.data);
+        } catch (e) {
+          setPerfil(null);
+        }
+
         // Intentar cargar datos de la API
         try {
-          const [pedidosResponse, productosResponse] = await Promise.all([
-            apiClient.get<any>('/api/Pedidos/mis-pedidos'),
-            apiClient.get<any>('/api/Productos/favoritos')
+          const [pedidosResponse, favoritosResponse] = await Promise.all([
+            apiClient.get<any>('/api/Pedidos/mis'),
+            getFavoritos()
           ]);
 
           // Extraer datos de manera flexible
           const pedidosData = pedidosResponse.data?.datos || pedidosResponse.data || [];
-          const productosData = productosResponse.data?.datos || productosResponse.data || [];
-
           setPedidos(Array.isArray(pedidosData) ? pedidosData : []);
-          setProductosFavoritos(Array.isArray(productosData) ? productosData : []);
+          setProductosFavoritos(Array.isArray(favoritosResponse) ? favoritosResponse.map((p: any) => ({
+            id: p.id,
+            codigo: p.codigo || '',
+            nombre: p.nombre,
+            descripcion: p.descripcion || '',
+            precio: p.precio,
+            stock: p.stock,
+            categoriaId: p.categoriaId || 0,
+            categoriaNombre: p.categoriaNombre || '',
+            marcaId: p.marcaId || 0,
+            marcaNombre: p.marcaNombre || '',
+            imagenUrl: p.imagenUrl || '',
+            especificaciones: p.especificaciones || '',
+            fechaCreacion: p.fechaCreacion || new Date(),
+            fechaModificacion: p.fechaModificacion,
+            activo: true,
+            precioOriginal: p.precioOriginal || p.precio,
+            precioConDescuento: p.precioConDescuento || p.precio
+          })) : []);
 
           // Calcular estadísticas
           const pedidosPendientes = pedidosData.filter((p: any) => 
@@ -51,79 +100,12 @@ const ClienteView: React.FC = () => {
 
         } catch (apiError) {
           console.warn('Error al cargar datos de la API, usando datos de demostración:', apiError);
-          
-          // Datos de demostración
-          setPedidos([
-            {
-              id: 1,
-              usuarioId: 1,
-              usuarioNombre: 'Cliente',
-              fechaPedido: new Date(),
-              total: 125000,
-              estado: 'PENDIENTE',
-              fechaCreacion: new Date(),
-              activo: true,
-              detalles: []
-            },
-            {
-              id: 2,
-              usuarioId: 1,
-              usuarioNombre: 'Cliente',
-              fechaPedido: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 días atrás
-              total: 89000,
-              estado: 'COMPLETADO',
-              fechaCreacion: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-              activo: true,
-              detalles: []
-            },
-            {
-              id: 3,
-              usuarioId: 1,
-              usuarioNombre: 'Cliente',
-              fechaPedido: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 días atrás
-              total: 156000,
-              estado: 'COMPLETADO',
-              fechaCreacion: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-              activo: true,
-              detalles: []
-            }
-          ]);
-
-          setProductosFavoritos([
-            {
-              id: 1,
-              codigo: 'MART001',
-              nombre: 'Martillo Stanley',
-              descripcion: 'Martillo de carpintero profesional',
-              precio: 25000,
-              stock: 15,
-              categoriaId: 1,
-              categoriaNombre: 'Herramientas Manuales',
-              marcaId: 1,
-              marcaNombre: 'Stanley',
-              fechaCreacion: new Date(),
-              activo: true
-            },
-            {
-              id: 2,
-              codigo: 'DEST002',
-              nombre: 'Destornillador Phillips',
-              descripcion: 'Destornillador Phillips #2',
-              precio: 5000,
-              stock: 25,
-              categoriaId: 1,
-              categoriaNombre: 'Herramientas Manuales',
-              marcaId: 2,
-              marcaNombre: 'DeWalt',
-              fechaCreacion: new Date(),
-              activo: true
-            }
-          ]);
-
+          setPedidos([]);
+          setProductosFavoritos([]);
           setStats({
-            totalPedidos: 3,
-            pedidosPendientes: 1,
-            totalGastado: 245000
+            totalPedidos: 0,
+            pedidosPendientes: 0,
+            totalGastado: 0
           });
         }
 
@@ -150,8 +132,101 @@ const ClienteView: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <header className="mb-8">
-        <h1 className="text-2xl font-bold text-ferremas-primary">Mi Panel de Cliente</h1>
-        <p className="text-ferremas-gray-600 mt-2">Gestiona tus pedidos y favoritos</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-ferremas-primary">
+              Mi Cuenta - {perfil?.nombre || user?.nombre || 'Usuario'}
+            </h1>
+            <p className="text-ferremas-gray-600 mt-2">
+              Gestiona tus pedidos, favoritos y accede a funcionalidades de cliente
+            </p>
+            <p className="text-sm text-ferremas-gray-500 mt-1">
+              Rol: {user?.rol || 'Usuario'}
+            </p>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => navigate('/catalogo')}
+              className="bg-ferremas-primary text-white px-4 py-2 rounded hover:bg-ferremas-primary-dark transition"
+            >
+              Ver Catálogo
+            </button>
+            {user?.rol && user.rol !== 'cliente' && user.rol !== 'CLIENT' && (
+              <button
+                onClick={() => {
+                  // Navegar al dashboard correspondiente al rol
+                  const dashboardRoutes: { [key: string]: string } = {
+                    'administrador': '/admin/dashboard',
+                    'ADMIN': '/admin/dashboard',
+                    'vendedor': '/vendedor/dashboard',
+                    'SELLER': '/vendedor/dashboard',
+                    'bodeguero': '/bodeguero/dashboard',
+                    'WAREHOUSE': '/bodeguero/dashboard',
+                    'contador': '/contador/dashboard',
+                    'ACCOUNTANT': '/contador/dashboard',
+                    'repartidor': '/repartidor/dashboard',
+                    'DELIVERY': '/repartidor/dashboard'
+                  };
+                  const route = dashboardRoutes[user.rol];
+                  if (route) {
+                    navigate(route);
+                  }
+                }}
+                className="bg-ferremas-secondary text-white px-4 py-2 rounded hover:bg-ferremas-secondary-dark transition"
+              >
+                Mi Dashboard
+              </button>
+            )}
+          </div>
+        </div>
+        {/* NUEVO: Datos personales con acciones */}
+        {perfil && (
+          <div className="mt-4 mb-6 bg-ferremas-blue-50 border border-ferremas-blue-200 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-lg font-semibold text-ferremas-primary">Datos personales</span>
+              <div className="flex gap-2">
+                <button className="btn-secondary btn-xs" onClick={() => setShowEditProfile(true)}>Editar</button>
+                <button className="btn-secondary btn-xs" onClick={() => setShowCambiarPassword(true)}>Cambiar contraseña</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div><span className="font-semibold">Nombre:</span> {perfil.nombre} {perfil.apellido || ''}</div>
+                {perfil.rut && <div><span className="font-semibold">RUT:</span> {perfil.rut}</div>}
+                {perfil.correoElectronico && <div><span className="font-semibold">Correo:</span> {perfil.correoElectronico}</div>}
+                {perfil.telefono && <div><span className="font-semibold">Teléfono:</span> {perfil.telefono}</div>}
+                {typeof perfil.puntos === 'number' && <div><span className="font-semibold">Puntos acumulados:</span> {perfil.puntos}</div>}
+              </div>
+            </div>
+            <EditProfileModal open={showEditProfile} onClose={() => setShowEditProfile(false)} perfil={perfil} onUpdated={setPerfil} />
+            <CambiarPasswordModal open={showCambiarPassword} onClose={() => setShowCambiarPassword(false)} />
+          </div>
+        )}
+        {/* NUEVO: Sección de direcciones */}
+        {perfil && (
+          <div className="mb-6 bg-ferremas-blue-50 border border-ferremas-blue-200 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-lg font-semibold text-ferremas-primary">Direcciones</span>
+              <button className="btn-secondary btn-xs" onClick={() => setShowDirecciones(true)}>Gestionar</button>
+            </div>
+            {perfil.direcciones && perfil.direcciones.length > 0 ? (
+              <ul className="list-disc ml-6">
+                {perfil.direcciones.map((dir, idx) => (
+                  <li key={idx} className="text-sm">
+                    {dir.Calle || dir.calle || ''} {dir.Numero || dir.numero || ''}, {dir.Comuna || dir.comuna || ''}, {dir.Region || dir.region || ''} {dir.EsPrincipal || dir.esPrincipal ? <span className="ml-2 text-xs text-ferremas-success">(Principal)</span> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : <div className="text-ferremas-gray-500 text-sm">No tienes direcciones registradas.</div>}
+            <DireccionesModal 
+              open={showDirecciones} 
+              onClose={() => setShowDirecciones(false)} 
+              direcciones={perfil.direcciones || []} 
+              onUpdated={d => setPerfil(p => p ? { ...p, direcciones: d } : p)}
+              usuarioId={user?.id || 1}
+            />
+          </div>
+        )}
       </header>
 
       {error && (
@@ -159,6 +234,9 @@ const ClienteView: React.FC = () => {
           <p className="text-red-600">{error}</p>
         </div>
       )}
+
+      {/* Información de Funcionalidades */}
+      <ClienteInfoCard className="mb-6" />
 
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -263,8 +341,11 @@ const ClienteView: React.FC = () => {
                     ❤️
                   </button>
                 </div>
+                {producto.imagenUrl && (
+                  <img src={producto.imagenUrl} alt={producto.nombre} className="w-full h-32 object-contain mb-2" />
+                )}
                 <p className="text-ferremas-gray-600 text-sm mb-3 line-clamp-2">
-                  {producto.descripcion}
+                  {producto.descripcion || 'Sin descripción'}
                 </p>
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-lg font-bold text-ferremas-primary">

@@ -43,7 +43,8 @@ namespace Ferremas.Api.Controllers
                     {
                         Id = p.Id,
                         UsuarioId = p.UsuarioId ?? 0,
-                        UsuarioNombre = p.Usuario != null ? p.Usuario.Nombre : "Usuario no encontrado",
+                        UsuarioNombre = p.Usuario != null ? p.Usuario.Nombre : (p.NombreClienteTemporal ?? "Anónimo"),
+                        NombreClienteTemporal = p.NombreClienteTemporal,
                         FechaPedido = p.FechaPedido ?? DateTime.MinValue,
                         FechaCreacion = p.FechaCreacion,
                         Estado = p.Estado ?? "Pendiente",
@@ -112,7 +113,8 @@ namespace Ferremas.Api.Controllers
                     {
                         Id = p.Id,
                         UsuarioId = p.UsuarioId ?? 0,
-                        UsuarioNombre = p.Usuario != null ? p.Usuario.Nombre : "Mi cuenta",
+                        UsuarioNombre = p.Usuario != null ? p.Usuario.Nombre : (p.NombreClienteTemporal ?? "Anónimo"),
+                        NombreClienteTemporal = p.NombreClienteTemporal,
                         FechaPedido = p.FechaPedido ?? DateTime.MinValue,
                         FechaCreacion = p.FechaCreacion,
                         Estado = p.Estado ?? "Pendiente",
@@ -207,7 +209,8 @@ namespace Ferremas.Api.Controllers
                 {
                     Id = pedido.Id,
                     UsuarioId = pedido.UsuarioId ?? 0,
-                    UsuarioNombre = pedido.Usuario != null ? pedido.Usuario.Nombre : "Usuario no encontrado",
+                    UsuarioNombre = pedido.Usuario != null ? pedido.Usuario.Nombre : (pedido.NombreClienteTemporal ?? "Anónimo"),
+                    NombreClienteTemporal = pedido.NombreClienteTemporal,
                     FechaPedido = pedido.FechaPedido ?? DateTime.MinValue,
                     FechaCreacion = pedido.FechaCreacion,
                     Estado = pedido.Estado ?? "Pendiente",
@@ -314,7 +317,8 @@ namespace Ferremas.Api.Controllers
                         PrecioUnitario = d.PrecioUnitario,
                         Subtotal = d.Cantidad * d.PrecioUnitario,
                         Observaciones = d.Observaciones
-                    }).ToList()
+                    }).ToList(),
+                    NombreClienteTemporal = pedidoDto.NombreClienteTemporal
                 };
 
                 // Actualizar stock de productos

@@ -290,6 +290,8 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
         comuna: ciudadEnvio,
         region: '',
         codigoPostal: '',
+        rut: rutEnvio,
+        correo: correoEnvio,
         ...(user?.id ? {} : {
           items: carrito.map(item => ({
             id: item.id,

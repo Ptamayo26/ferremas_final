@@ -15,7 +15,6 @@ namespace Ferremas.Api.DTOs
         [StringLength(20)]
         public string Numero { get; set; } = string.Empty;
 
-        [Required]
         [StringLength(100)]
         public string Departamento { get; set; } = string.Empty;
 
@@ -27,7 +26,6 @@ namespace Ferremas.Api.DTOs
         [StringLength(100)]
         public string Region { get; set; } = string.Empty;
 
-        [Required]
         [StringLength(10)]
         public string CodigoPostal { get; set; } = string.Empty;
 

@@ -292,6 +292,12 @@ const AdminView: React.FC = () => {
           >
             Gestionar Usuarios
           </button>
+          <button
+            onClick={() => window.location.href = '/catalogo'}
+            className="btn-primary"
+          >
+            Ir al Catálogo
+          </button>
         </nav>
       </header>
 

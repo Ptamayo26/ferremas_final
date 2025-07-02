@@ -70,9 +70,9 @@ const AppContent: React.FC = () => {
           <Route path="/debug-auth" element={<DebugAuth />} />
           <Route path="/simple-catalogo" element={<SimpleCatalogo />} />
           
-          {/* Rutas protegidas - Cliente */}
+          {/* Rutas protegidas - Mi Cuenta (accesible para cualquier usuario autenticado) */}
           <Route path="/mi-cuenta" element={
-            <ProtectedRoute allowedRoles={['cliente', 'CLIENT']}>
+            <ProtectedRoute allowedRoles={['cliente', 'CLIENT', 'administrador', 'ADMIN']}>
               <ClienteView />
             </ProtectedRoute>
           } />

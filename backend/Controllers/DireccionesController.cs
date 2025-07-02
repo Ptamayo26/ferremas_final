@@ -67,6 +67,11 @@ namespace Ferremas.Api.Controllers
                 if (usuario == null)
                     return NotFound($"Usuario con ID {usuarioId} no encontrado");
 
+                // Buscar el cliente relacionado a este usuario
+                var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
+                if (cliente == null)
+                    return BadRequest("No existe un cliente asociado a este usuario.");
+
                 // Si esta dirección será principal, quitar la principal actual
                 if (dto.EsPrincipal)
                 {
@@ -83,6 +88,7 @@ namespace Ferremas.Api.Controllers
                 var direccion = new Direccion
                 {
                     UsuarioId = usuarioId,
+                    ClienteId = cliente.Id,
                     Calle = dto.Calle,
                     Numero = dto.Numero,
                     Departamento = dto.Departamento,

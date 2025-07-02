@@ -378,6 +378,7 @@ export interface CheckoutRequestDTO {
     giro: string;
     direccion: string;
   };
+  nombreClienteTemporal?: string;
 }
 
 export interface CheckoutResponseDTO {

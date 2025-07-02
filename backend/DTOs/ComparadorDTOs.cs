@@ -74,7 +74,7 @@ namespace FerremasBackend.DTOs
 
     public class ComparacionResultado
     {
-        public string Tienda { get; set; }
+        public string Tienda { get; set; } = string.Empty;
         public decimal Precio { get; set; }
         public decimal Diferencia { get; set; }
         public decimal PorcentajeAhorro { get; set; }

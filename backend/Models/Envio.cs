@@ -52,6 +52,12 @@ namespace Ferremas.Api.Models
         [Column("fecha_actualizacion")]
         public DateTime? FechaActualizacion { get; set; }
         
+        [Column("rut")]
+        public string Rut { get; set; } = string.Empty;
+        
+        [Column("correo")]
+        public string Correo { get; set; } = string.Empty;
+        
         // Relaciones
         [ForeignKey("PedidoId")]
         public required Pedido Pedido { get; set; }

@@ -7,6 +7,7 @@ import Carrito from '../components/sales/Carrito';
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { useAuth } from '../context/AuthContext';
 
 const BASE_URL = "http://localhost:5200"; // Cambia esto si tu backend está en otra URL
 
@@ -108,6 +109,7 @@ const CatalogoProductos: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -375,9 +377,19 @@ const CatalogoProductos: React.FC = () => {
         </div>
       </div>
 
-      {/* Header con título y carrito */}
+      {/* Header con título, carrito y mi cuenta */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-ferremas-primary">Catálogo de Productos</h1>
+        <div className="flex items-center space-x-4">
+          {isAuthenticated && (
+            <button
+              onClick={() => navigate('/mi-cuenta')}
+              className="bg-ferremas-secondary text-white font-semibold px-4 py-2 rounded shadow hover:bg-ferremas-secondary-dark transition"
+            >
+              Mi Cuenta
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filtros y búsqueda */}

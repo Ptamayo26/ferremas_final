@@ -9,6 +9,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Ferremas.Api.Data;
 using Ferremas.Api.Models;
+using System.Security.Claims;
 
 namespace Ferremas.Api.Controllers
 {
@@ -129,8 +130,8 @@ namespace Ferremas.Api.Controllers
                     {
                         Nombre = "Cliente Anónimo",
                         Apellido = "",
-                        Rut = "",
-                        CorreoElectronico = "anonimo@ferremas.cl",
+                        Rut = dto.Rut ?? "",
+                        CorreoElectronico = dto.Correo ?? "anonimo@ferremas.cl",
                         Telefono = "",
                         FechaCreacion = DateTime.UtcNow,
                         Activo = true
@@ -248,8 +249,8 @@ namespace Ferremas.Api.Controllers
                     }
                 }
                 var impuestos = (subtotal - descuento) * 0.19m; // IVA 19% sobre el neto
-                var envio = 0m; // Por ahora sin costo de envío
-                var total = subtotal - descuento + impuestos + envio;
+                var costoEnvio = 0m; // Por ahora sin costo de envío
+                var total = subtotal - descuento + impuestos + costoEnvio;
 
                 // Crear el pedido
                 var pedido = new Pedido
@@ -258,7 +259,7 @@ namespace Ferremas.Api.Controllers
                     FechaPedido = DateTime.UtcNow,
                     Total = total,
                     Estado = "PENDIENTE",
-                    Observaciones = dto.Observaciones,
+                    Observaciones = (dto.Observaciones ?? "") + $" | RUT: {dto.Rut ?? ""} | Correo: {dto.Correo ?? ""}",
                     DireccionEntrega = direccion != null ? $"{direccion.Calle} {direccion.Numero}, {direccion.Comuna}, {direccion.Region}" : "",
                     FechaCreacion = DateTime.UtcNow,
                     FechaModificacion = DateTime.UtcNow,
@@ -296,6 +297,25 @@ namespace Ferremas.Api.Controllers
                 pedido.NumeroPedido = numeroPedido;
                 await _context.SaveChangesAsync();
 
+                // Crear el envío (ejemplo, ajusta según tu lógica actual)
+                var envio = new Envio
+                {
+                    PedidoId = pedido.Id,
+                    DireccionEnvio = direccion != null ? $"{direccion.Calle} {direccion.Numero}, {direccion.Comuna}, {direccion.Region}" : "",
+                    ProveedorTransporte = "Chilexpress",
+                    EstadoEnvio = "EN_PREPARACION",
+                    ComunaDestino = direccion?.Comuna ?? "",
+                    RegionDestino = direccion?.Region ?? "",
+                    NombreDestinatario = dto.Rut ?? "", // Usar RUT como nombre por ahora
+                    Rut = dto.Rut ?? "",
+                    Correo = dto.Correo ?? "",
+                    FechaEnvio = DateTime.UtcNow,
+                    FechaCreacion = DateTime.UtcNow,
+                    Pedido = pedido // Asignar la referencia requerida
+                };
+                _context.Envios.Add(envio);
+                await _context.SaveChangesAsync();
+
                 // Limpiar carrito solo si es autenticado
                 if (usuarioId != null)
                 {
@@ -326,7 +346,7 @@ namespace Ferremas.Api.Controllers
 
         private int? GetUsuarioIdFromToken()
         {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdClaim, out int userId))
                 return userId;
             return null;

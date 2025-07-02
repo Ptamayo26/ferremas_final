@@ -101,5 +101,28 @@ namespace Ferremas.Api.Controllers
                 return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
+
+        [HttpGet("mi-perfil")]
+        public async Task<ActionResult<ClienteResponseDTO>> GetMiPerfil()
+        {
+            try
+            {
+                // Obtener el ID de usuario autenticado de forma robusta
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int usuarioId))
+                    return Unauthorized("No se pudo obtener el usuario autenticado");
+
+                // Buscar el cliente asociado a este usuarioId
+                var clientes = await _clienteService.GetAll();
+                var cliente = clientes.FirstOrDefault(c => c.UsuarioId == usuarioId);
+                if (cliente == null)
+                    return NotFound("No se encontró un cliente asociado a este usuario");
+                return Ok(cliente);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
     }
 }

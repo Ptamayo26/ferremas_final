@@ -31,6 +31,10 @@ namespace Ferremas.Api.DTOs
         public string? Comuna { get; set; }
         public string? Region { get; set; }
         public string? CodigoPostal { get; set; }
+
+        // Nuevos campos para RUT y Correo
+        public string? Rut { get; set; }
+        public string? Correo { get; set; }
     }
 
     public class CheckoutResponseDTO

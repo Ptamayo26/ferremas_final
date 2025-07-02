@@ -21,8 +21,8 @@ namespace Ferremas.Api.DTOs
 
         public string? DatosRespuesta { get; set; }
 
-        public string Descripcion { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
 
-        public Dictionary<string, string> DatosAdicionales { get; set; }
+        public Dictionary<string, string> DatosAdicionales { get; set; } = new Dictionary<string, string>();
     }
 } 

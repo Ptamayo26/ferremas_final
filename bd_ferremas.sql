@@ -49,16 +49,16 @@ DROP TABLE IF EXISTS `carrito`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `carrito` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `cliente_id` int NOT NULL,
-  `producto_id` int NOT NULL,
+  `usuario_id` int NOT NULL,
+  `producto_id` int DEFAULT NULL,
   `cantidad` int NOT NULL,
-  `precio_unitario` decimal(10,2) NOT NULL,
   `fecha_agregado` datetime DEFAULT CURRENT_TIMESTAMP,
+  `activo` tinyint(1) DEFAULT '1',
   PRIMARY KEY (`id`),
-  KEY `cliente_id` (`cliente_id`),
-  KEY `producto_id` (`producto_id`),
-  CONSTRAINT `carrito_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `carrito_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE
+  KEY `cliente_id` (`usuario_id`),
+  KEY `fk_carrito_producto` (`producto_id`),
+  CONSTRAINT `carrito_ibfk_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_carrito_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -68,7 +68,7 @@ CREATE TABLE `carrito` (
 
 LOCK TABLES `carrito` WRITE;
 /*!40000 ALTER TABLE `carrito` DISABLE KEYS */;
-INSERT INTO `carrito` VALUES (1,1,3,1,12990.00,'2025-05-13 00:02:35'),(2,1,5,2,1990.00,'2025-05-13 00:02:35');
+INSERT INTO `carrito` VALUES (1,1,NULL,1,'2025-05-13 00:02:35',1),(2,1,NULL,2,'2025-05-13 00:02:35',1);
 /*!40000 ALTER TABLE `carrito` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -88,6 +88,7 @@ CREATE TABLE `categorias` (
   `activo` tinyint(1) DEFAULT '1',
   `fecha_creacion` datetime DEFAULT CURRENT_TIMESTAMP,
   `fecha_modificacion` datetime DEFAULT NULL,
+  `descuento_porcentaje` decimal(5,2) DEFAULT '0.00' COMMENT 'Porcentaje de descuento aplicable a todos los productos de esta categoría',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -98,7 +99,7 @@ CREATE TABLE `categorias` (
 
 LOCK TABLES `categorias` WRITE;
 /*!40000 ALTER TABLE `categorias` DISABLE KEYS */;
-INSERT INTO `categorias` VALUES (1,'Herramientas Eléctricas',NULL,NULL,'HE',1,'2025-05-26 04:19:49',NULL),(2,'Herramientas Manuales',NULL,NULL,'HM',1,'2025-05-26 04:19:49',NULL),(3,'Jardinería',NULL,NULL,'JA',1,'2025-05-26 04:19:49',NULL),(4,'Construcción',NULL,NULL,'CO',1,'2025-05-26 04:19:49',NULL),(5,'Electricidad',NULL,NULL,'EL',1,'2025-05-26 04:19:49',NULL),(6,'Plomería',NULL,NULL,'PL',1,'2025-05-26 04:19:49',NULL),(7,'Pintura y Acabados',NULL,NULL,'PA',1,'2025-05-26 04:19:49',NULL),(8,'Seguridad Industrial',NULL,NULL,'SI',1,'2025-05-26 04:19:49',NULL);
+INSERT INTO `categorias` VALUES (1,'Herramientas Eléctricas',NULL,NULL,'HE',1,'2025-05-26 04:19:49',NULL,15.00),(2,'Herramientas Manuales',NULL,NULL,'HM',1,'2025-05-26 04:19:49',NULL,10.00),(3,'Jardinería',NULL,NULL,'JA',1,'2025-05-26 04:19:49',NULL,20.00),(4,'Construcción',NULL,NULL,'CO',1,'2025-05-26 04:19:49',NULL,5.00),(5,'Electricidad',NULL,NULL,'EL',1,'2025-05-26 04:19:49',NULL,12.00),(6,'Plomería',NULL,NULL,'PL',1,'2025-05-26 04:19:49',NULL,8.00),(7,'Pintura y Acabados',NULL,NULL,'PA',1,'2025-05-26 04:19:49',NULL,25.00),(8,'Seguridad Industrial',NULL,NULL,'SI',1,'2025-05-26 04:19:49',NULL,18.00);
 /*!40000 ALTER TABLE `categorias` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -119,14 +120,9 @@ CREATE TABLE `clientes` (
   `fecha_creacion` datetime DEFAULT NULL,
   `fecha_modificacion` datetime DEFAULT NULL,
   `activo` tinyint(1) DEFAULT NULL,
-<<<<<<< HEAD
   `usuario_id` int DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-=======
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
->>>>>>> origin/main
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -135,11 +131,7 @@ CREATE TABLE `clientes` (
 
 LOCK TABLES `clientes` WRITE;
 /*!40000 ALTER TABLE `clientes` DISABLE KEYS */;
-<<<<<<< HEAD
-INSERT INTO `clientes` VALUES (1,'+56 9 1234 5678',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),(2,'+56934567890','Javier','Ramírez','56789012-3','javier.ramirez@example.com','2025-05-25 17:09:07','2025-05-25 17:46:47',0,NULL),(3,'+56987654321','Valentina','Muñoz','34567890-1','valentina.munoz2@example.com','2025-05-25 17:31:26','2025-05-25 17:47:02',0,NULL),(4,'+56923456789','Camila','Pérez','45678901-2','camila.perez@example.com','2025-05-25 17:42:13','2025-05-25 17:42:13',1,NULL),(5,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:06:46',NULL,1,NULL),(6,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:06:52',NULL,1,NULL),(7,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:09:45',NULL,1,NULL),(8,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:09:51',NULL,1,NULL),(9,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:15:04',NULL,1,NULL),(10,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:15:09',NULL,1,NULL);
-=======
-INSERT INTO `clientes` VALUES (1,'+56 9 1234 5678',NULL,NULL,NULL,NULL,NULL,NULL,NULL),(2,'+56934567890','Javier','Ramírez','56789012-3','javier.ramirez@example.com','2025-05-25 17:09:07','2025-05-25 17:46:47',0),(3,'+56987654321','Valentina','Muñoz','34567890-1','valentina.munoz2@example.com','2025-05-25 17:31:26','2025-05-25 17:47:02',0),(4,'+56923456789','Camila','Pérez','45678901-2','camila.perez@example.com','2025-05-25 17:42:13','2025-05-25 17:42:13',1);
->>>>>>> origin/main
+INSERT INTO `clientes` VALUES (1,'+56 9 1234 5678',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),(2,'+56934567890','Javier','Ramírez','56789012-3','javier.ramirez@example.com','2025-05-25 17:09:07','2025-05-25 17:46:47',0,NULL),(3,'+56987654321','Valentina','Muñoz','34567890-1','valentina.munoz2@example.com','2025-05-25 17:31:26','2025-05-25 17:47:02',0,NULL),(4,'+56923456789','Camila','Pérez','45678901-2','camila.perez@example.com','2025-05-25 17:42:13','2025-05-25 17:42:13',1,NULL),(5,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:06:46',NULL,1,NULL),(6,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:06:52',NULL,1,NULL),(7,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:09:45',NULL,1,NULL),(8,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:09:51',NULL,1,NULL),(9,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:15:04',NULL,1,NULL),(10,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:15:09',NULL,1,NULL),(11,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:45:39',NULL,1,NULL),(12,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:45:47',NULL,1,NULL),(13,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:50:16',NULL,1,NULL),(14,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:50:32',NULL,1,NULL),(15,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 07:53:08',NULL,1,NULL),(16,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 08:48:14',NULL,1,NULL),(17,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 09:25:09',NULL,1,NULL),(18,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 09:26:50',NULL,1,NULL),(19,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 19:50:44',NULL,1,NULL),(20,'','Cliente Anónimo','','','anonimo@ferremas.cl','2025-07-02 20:11:30',NULL,1,NULL),(21,NULL,'Paloma','Tamayo',NULL,'palomatamayo@ferremas.cl','2025-07-02 17:19:15',NULL,1,13),(22,NULL,'Paloma','Tamayo',NULL,'palomatamayo@ferremas.cl','2025-07-02 17:19:43',NULL,1,13),(23,NULL,'Juan','Pérez',NULL,NULL,NULL,NULL,1,1),(24,NULL,'Paloma','Tamayo',NULL,NULL,NULL,NULL,1,13);
 /*!40000 ALTER TABLE `clientes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -345,6 +337,68 @@ INSERT INTO `conversion_divisas` VALUES (1,'CLP','USD',0.0010,'2025-05-13 00:02:
 UNLOCK TABLES;
 
 --
+-- Table structure for table `datos_factura_empresa`
+--
+
+DROP TABLE IF EXISTS `datos_factura_empresa`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `datos_factura_empresa` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `pedido_id` int NOT NULL,
+  `razon_social` varchar(150) NOT NULL,
+  `rut_empresa` varchar(20) NOT NULL,
+  `giro` varchar(100) NOT NULL,
+  `direccion_empresa` varchar(200) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `pedido_id` (`pedido_id`),
+  CONSTRAINT `datos_factura_empresa_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `datos_factura_empresa`
+--
+
+LOCK TABLES `datos_factura_empresa` WRITE;
+/*!40000 ALTER TABLE `datos_factura_empresa` DISABLE KEYS */;
+/*!40000 ALTER TABLE `datos_factura_empresa` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `descuentos`
+--
+
+DROP TABLE IF EXISTS `descuentos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `descuentos` (
+  `Id` int NOT NULL AUTO_INCREMENT,
+  `Codigo` varchar(50) NOT NULL,
+  `Descripcion` varchar(255) DEFAULT NULL,
+  `Tipo` varchar(20) NOT NULL,
+  `Valor` decimal(10,2) NOT NULL,
+  `Activo` tinyint(1) NOT NULL DEFAULT '1',
+  `FechaInicio` datetime DEFAULT NULL,
+  `FechaFin` datetime DEFAULT NULL,
+  `UsoMaximo` int DEFAULT NULL,
+  `UsosActuales` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`Id`),
+  UNIQUE KEY `Codigo` (`Codigo`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `descuentos`
+--
+
+LOCK TABLES `descuentos` WRITE;
+/*!40000 ALTER TABLE `descuentos` DISABLE KEYS */;
+INSERT INTO `descuentos` VALUES (1,'PRUEBA10',NULL,'porcentaje',10.00,1,'2025-07-02 05:19:11','2025-08-01 05:19:11',NULL,0),(2,'PRUEBA5000',NULL,'monto',5000.00,1,'2025-07-02 05:19:11','2025-08-01 05:19:11',NULL,0),(3,'PRUEBA20',NULL,'porcentaje',20.00,1,'2025-07-02 05:19:11','2025-08-01 05:19:11',NULL,0);
+/*!40000 ALTER TABLE `descuentos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `detallespedido`
 --
 
@@ -366,7 +420,7 @@ CREATE TABLE `detallespedido` (
   CONSTRAINT `detallespedido_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`),
   CONSTRAINT `fk_detallespedido_pedido` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_detallespedido_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -375,7 +429,7 @@ CREATE TABLE `detallespedido` (
 
 LOCK TABLES `detallespedido` WRITE;
 /*!40000 ALTER TABLE `detallespedido` DISABLE KEYS */;
-INSERT INTO `detallespedido` VALUES (1,1,1,1,59990.00,NULL,NULL),(2,1,2,1,9990.00,NULL,NULL),(3,1,7,1,3990.00,NULL,NULL),(4,1,4,2,5990.00,11980.00,'Entrega rápida'),(5,1,4,1,1000.00,1000.00,NULL),(6,1,10,2,1500.00,3000.00,NULL),(7,1,10,2,1500.00,3000.00,NULL),(8,1,11,1,2000.00,2000.00,NULL),(9,1,12,3,500.00,1500.00,NULL);
+INSERT INTO `detallespedido` VALUES (1,1,1,1,59990.00,NULL,NULL),(2,1,2,1,9990.00,NULL,NULL),(3,1,7,1,3990.00,NULL,NULL),(4,1,4,2,5990.00,11980.00,'Entrega rápida'),(5,1,4,1,1000.00,1000.00,NULL),(6,1,10,2,1500.00,3000.00,NULL),(7,1,10,2,1500.00,3000.00,NULL),(8,1,11,1,2000.00,2000.00,NULL),(9,1,12,3,500.00,1500.00,NULL),(10,3,1,2,59990.00,119980.00,NULL),(11,4,1,1,1000.00,1000.00,NULL),(12,5,1,2,59990.00,119980.00,NULL),(13,6,1,2,59990.00,119980.00,NULL),(14,7,1,2,59990.00,119980.00,NULL),(15,8,1,2,59990.00,119980.00,NULL),(16,9,1,2,59990.00,119980.00,NULL);
 /*!40000 ALTER TABLE `detallespedido` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -422,7 +476,7 @@ DROP TABLE IF EXISTS `direcciones`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `direcciones` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `cliente_id` int NOT NULL,
+  `cliente_id` int DEFAULT NULL,
   `calle` varchar(150) NOT NULL,
   `numero` varchar(20) NOT NULL,
   `departamento` varchar(50) DEFAULT NULL,
@@ -432,14 +486,11 @@ CREATE TABLE `direcciones` (
   `es_principal` tinyint(1) DEFAULT NULL,
   `FechaCreacion` datetime DEFAULT CURRENT_TIMESTAMP,
   `FechaModificacion` datetime DEFAULT NULL,
-<<<<<<< HEAD
   `usuario_id` int DEFAULT NULL,
-=======
->>>>>>> origin/main
   PRIMARY KEY (`id`),
   KEY `usuario_id` (`cliente_id`),
-  CONSTRAINT `direcciones_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  CONSTRAINT `direcciones_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -448,11 +499,7 @@ CREATE TABLE `direcciones` (
 
 LOCK TABLES `direcciones` WRITE;
 /*!40000 ALTER TABLE `direcciones` DISABLE KEYS */;
-<<<<<<< HEAD
-INSERT INTO `direcciones` VALUES (1,1,'Av. Los Presidentes','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(2,2,'Calle Los Olmos','456',NULL,'Puerto Montt','Los Lagos',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(3,3,'Av. Los Leones','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(4,3,'Calle Providencia','789',NULL,'Providencia','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(5,4,'Pasaje Las Dalias','101',NULL,'Ñuñoa','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(6,2,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:09:07','2025-05-25 17:04:09',NULL),(7,3,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:31:26','2025-05-25 17:26:41',NULL),(8,4,'Avenida Central','321','8C','Ñuñoa','Metropolitana','7770000',1,'2025-05-25 17:42:13','2025-05-25 18:00:00',NULL);
-=======
-INSERT INTO `direcciones` VALUES (1,1,'Av. Los Presidentes','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL),(2,2,'Calle Los Olmos','456',NULL,'Puerto Montt','Los Lagos',NULL,0,'2025-05-23 01:38:20',NULL),(3,3,'Av. Los Leones','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL),(4,3,'Calle Providencia','789',NULL,'Providencia','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL),(5,4,'Pasaje Las Dalias','101',NULL,'Ñuñoa','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL),(6,2,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:09:07','2025-05-25 17:04:09'),(7,3,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:31:26','2025-05-25 17:26:41'),(8,4,'Avenida Central','321','8C','Ñuñoa','Metropolitana','7770000',1,'2025-05-25 17:42:13','2025-05-25 18:00:00');
->>>>>>> origin/main
+INSERT INTO `direcciones` VALUES (1,1,'Av. Los Presidentes','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(2,2,'Calle Los Olmos','456',NULL,'Puerto Montt','Los Lagos',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(3,3,'Av. Los Leones','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(4,3,'Calle Providencia','789',NULL,'Providencia','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(5,4,'Pasaje Las Dalias','101',NULL,'Ñuñoa','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(6,2,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:09:07','2025-05-25 17:04:09',NULL),(7,3,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:31:26','2025-05-25 17:26:41',NULL),(8,4,'Avenida Central','321','8C','Ñuñoa','Metropolitana','7770000',1,'2025-05-25 17:42:13','2025-05-25 18:00:00',NULL),(10,12,'Sin dirección','S/N','','','','',1,'2025-07-02 07:45:47','2025-07-02 07:45:47',NULL),(11,13,'Sin dirección','S/N','','','','',1,'2025-07-02 07:50:16','2025-07-02 07:50:16',NULL),(12,14,'Sin dirección','S/N','','','','',1,'2025-07-02 07:50:32','2025-07-02 07:50:32',NULL),(13,15,'Sin dirección','S/N','','','','',1,'2025-07-02 07:53:09','2025-07-02 07:53:09',NULL),(14,16,'Sin dirección','S/N','','','','',1,'2025-07-02 08:48:14','2025-07-02 08:48:14',NULL),(16,18,'Sin dirección','S/N','','','','',1,'2025-07-02 09:26:50','2025-07-02 09:26:50',NULL),(17,19,'Sin dirección','S/N','','','','',1,'2025-07-02 19:50:44','2025-07-02 19:50:44',NULL),(18,20,'Juan Perez','La unión 372 ','','Puerto Montt','','',1,'2025-07-02 20:11:30','2025-07-02 20:11:30',NULL);
 /*!40000 ALTER TABLE `direcciones` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -509,16 +556,14 @@ CREATE TABLE `envios` (
   `nombre_destinatario` varchar(100) NOT NULL,
   `fecha_creacion` datetime NOT NULL,
   `fecha_actualizacion` datetime DEFAULT NULL,
+  `rut` varchar(20) DEFAULT '',
+  `correo` varchar(100) DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `pedido_id` (`pedido_id`),
   KEY `repartidor_id` (`repartidor_id`),
   CONSTRAINT `envios_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`),
   CONSTRAINT `envios_ibfk_2` FOREIGN KEY (`repartidor_id`) REFERENCES `usuarios` (`id`)
-<<<<<<< HEAD
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-=======
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
->>>>>>> origin/main
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -527,11 +572,7 @@ CREATE TABLE `envios` (
 
 LOCK TABLES `envios` WRITE;
 /*!40000 ALTER TABLE `envios` DISABLE KEYS */;
-<<<<<<< HEAD
-INSERT INTO `envios` VALUES (1,1,4,'2025-05-13 00:00:00','2','','Shipit','',NULL,'','','','','2025-05-26 20:50:55',NULL),(5,1,4,'2025-05-26 20:51:05','EN_PREPARACION','Av. Los Presidentes 123','Shipit','SHIPIT-123456','Sin observaciones','Santiago','Región Metropolitana','+56912345678','Juan Pérez','2025-05-26 20:51:05',NULL),(6,1,4,'2025-05-26 20:51:05','DESPACHADO','Calle Los Olmos 456','Chilexpress','CHILEX-789012','Entregar en portería','Puerto Montt','Los Lagos','+56987654321','María González','2025-05-26 20:51:05',NULL),(7,1,4,'2025-05-26 21:03:02','EN_PREPARACION','Av. Los Presidentes 123, Depto 45','Shipit','SHIPIT-123456','Sin observaciones','Santiago','Región Metropolitana','+56912345678','Juan Pérez','2025-05-26 21:03:02',NULL),(8,2,4,'2025-07-02 02:22:14','EN_PREPARACION','Av. Principal 123, Depto 45','Chilexpress','CHILEX-789012',NULL,'Santiago','Región Metropolitana','+56912345678','Juan Pérez','2025-07-02 02:22:14',NULL);
-=======
-INSERT INTO `envios` VALUES (1,1,4,'2025-05-13 00:00:00','2','','Shipit','',NULL,'','','','','2025-05-26 20:50:55',NULL),(5,1,4,'2025-05-26 20:51:05','EN_PREPARACION','Av. Los Presidentes 123','Shipit','SHIPIT-123456','Sin observaciones','Santiago','Región Metropolitana','+56912345678','Juan Pérez','2025-05-26 20:51:05',NULL),(6,1,4,'2025-05-26 20:51:05','DESPACHADO','Calle Los Olmos 456','Chilexpress','CHILEX-789012','Entregar en portería','Puerto Montt','Los Lagos','+56987654321','María González','2025-05-26 20:51:05',NULL),(7,1,4,'2025-05-26 21:03:02','EN_PREPARACION','Av. Los Presidentes 123, Depto 45','Shipit','SHIPIT-123456','Sin observaciones','Santiago','Región Metropolitana','+56912345678','Juan Pérez','2025-05-26 21:03:02',NULL);
->>>>>>> origin/main
+INSERT INTO `envios` VALUES (1,1,4,'2025-05-13 00:00:00','2','','Shipit','',NULL,'','','','','2025-05-26 20:50:55',NULL,'',''),(5,1,4,'2025-05-26 20:51:05','EN_PREPARACION','Av. Los Presidentes 123','Shipit','SHIPIT-123456','Sin observaciones','Santiago','Región Metropolitana','+56912345678','Juan Pérez','2025-05-26 20:51:05',NULL,'',''),(6,1,4,'2025-05-26 20:51:05','DESPACHADO','Calle Los Olmos 456','Chilexpress','CHILEX-789012','Entregar en portería','Puerto Montt','Los Lagos','+56987654321','María González','2025-05-26 20:51:05',NULL,'',''),(7,1,4,'2025-05-26 21:03:02','EN_PREPARACION','Av. Los Presidentes 123, Depto 45','Shipit','SHIPIT-123456','Sin observaciones','Santiago','Región Metropolitana','+56912345678','Juan Pérez','2025-05-26 21:03:02',NULL,'',''),(8,2,4,'2025-07-02 02:22:14','EN_PREPARACION','Av. Principal 123, Depto 45','Chilexpress','CHILEX-789012',NULL,'Santiago','Región Metropolitana','+56912345678','Juan Pérez','2025-07-02 02:22:14',NULL,'','');
 /*!40000 ALTER TABLE `envios` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -555,11 +596,7 @@ CREATE TABLE `facturas` (
   UNIQUE KEY `pedido_id` (`pedido_id`),
   UNIQUE KEY `numero_factura` (`numero_factura`),
   CONSTRAINT `facturas_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`)
-<<<<<<< HEAD
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-=======
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
->>>>>>> origin/main
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -568,11 +605,7 @@ CREATE TABLE `facturas` (
 
 LOCK TABLES `facturas` WRITE;
 /*!40000 ALTER TABLE `facturas` DISABLE KEYS */;
-<<<<<<< HEAD
 INSERT INTO `facturas` VALUES (1,1,'F-001','2025-05-12 00:00:00',72244.00,13726.00,85970.00,'/facturas/F-001.pdf'),(2,2,'F-002','2025-07-02 02:21:46',72244.00,13726.00,85970.00,'/facturas/F-002.pdf');
-=======
-INSERT INTO `facturas` VALUES (1,1,'F-001','2025-05-12 00:00:00',72244.00,13726.00,85970.00,'/facturas/F-001.pdf');
->>>>>>> origin/main
 /*!40000 ALTER TABLE `facturas` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -870,11 +903,7 @@ CREATE TABLE `pagos` (
   PRIMARY KEY (`id`),
   KEY `pedido_id` (`pedido_id`),
   CONSTRAINT `pagos_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`)
-<<<<<<< HEAD
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-=======
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
->>>>>>> origin/main
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -883,11 +912,7 @@ CREATE TABLE `pagos` (
 
 LOCK TABLES `pagos` WRITE;
 /*!40000 ALTER TABLE `pagos` DISABLE KEYS */;
-<<<<<<< HEAD
-INSERT INTO `pagos` VALUES (1,1,85970.00,'2025-05-13 00:02:35','COMPLETADO','TRANSFERENCIA','TR-12345678',NULL,NULL),(2,2,85970.00,'2025-07-02 02:21:28','COMPLETADO','WEBPAY','TBK-123456789','TOKEN_WEBPAY_TEST_123',NULL);
-=======
-INSERT INTO `pagos` VALUES (1,1,85970.00,'2025-05-13 00:02:35','COMPLETADO','TRANSFERENCIA','TR-12345678',NULL,NULL);
->>>>>>> origin/main
+INSERT INTO `pagos` VALUES (1,1,85970.00,'2025-05-13 00:02:35','COMPLETADO','TRANSFERENCIA','TR-12345678',NULL,NULL),(2,2,85970.00,'2025-07-02 02:21:28','COMPLETADO','WEBPAY','TBK-123456789','TOKEN_WEBPAY_TEST_123',NULL),(3,5,119980.00,'2025-07-02 03:53:10','PENDIENTE','WEBPAY','01ab3d7a1a143ad7a6feacd549a48163e8e1b328a6864ea9e6121ead1c254c8d','01ab3d7a1a143ad7a6feacd549a48163e8e1b328a6864ea9e6121ead1c254c8d','{\"Token\":\"01ab3d7a1a143ad7a6feacd549a48163e8e1b328a6864ea9e6121ead1c254c8d\",\"Url\":\"https://webpay3gint.transbank.cl/webpayserver/initTransaction\",\"OriginalRequest\":\"{\\u0022buy_order\\u0022:\\u0022ORD-5\\u0022,\\u0022session_id\\u0022:\\u0022anon-1751442789068\\u0022,\\u0022amount\\u0022:119980.0,\\u0022return_url\\u0022:\\u0022http://localhost:3000/confirmacion-pago\\u0022}\",\"OriginalResponse\":\"{\\u0022token\\u0022:\\u002201ab3d7a1a143ad7a6feacd549a48163e8e1b328a6864ea9e6121ead1c254c8d\\u0022,\\u0022url\\u0022:\\u0022https://webpay3gint.transbank.cl/webpayserver/initTransaction\\u0022}\"}'),(4,6,119980.00,'2025-07-02 04:48:14','PENDIENTE','WEBPAY','01abfb2c846c1a0b77731400b3e1a9538ef6ee864dc02c5346ae7b39505778f6','01abfb2c846c1a0b77731400b3e1a9538ef6ee864dc02c5346ae7b39505778f6','{\"Token\":\"01abfb2c846c1a0b77731400b3e1a9538ef6ee864dc02c5346ae7b39505778f6\",\"Url\":\"https://webpay3gint.transbank.cl/webpayserver/initTransaction\",\"OriginalRequest\":\"{\\u0022buy_order\\u0022:\\u0022ORD-6\\u0022,\\u0022session_id\\u0022:\\u0022anon-1751446094275\\u0022,\\u0022amount\\u0022:119980.0,\\u0022return_url\\u0022:\\u0022http://localhost:3000/confirmacion-pago\\u0022}\",\"OriginalResponse\":\"{\\u0022token\\u0022:\\u002201abfb2c846c1a0b77731400b3e1a9538ef6ee864dc02c5346ae7b39505778f6\\u0022,\\u0022url\\u0022:\\u0022https://webpay3gint.transbank.cl/webpayserver/initTransaction\\u0022}\"}'),(5,7,119980.00,'2025-07-02 05:26:51','PENDIENTE','WEBPAY','01abd0be704925f22f68295ac17ab28c75178a0b26affb1071878066aa70a92e','01abd0be704925f22f68295ac17ab28c75178a0b26affb1071878066aa70a92e','{\"Token\":\"01abd0be704925f22f68295ac17ab28c75178a0b26affb1071878066aa70a92e\",\"Url\":\"https://webpay3gint.transbank.cl/webpayserver/initTransaction\",\"OriginalRequest\":\"{\\u0022buy_order\\u0022:\\u0022ORD-7\\u0022,\\u0022session_id\\u0022:\\u0022anon-1751448410200\\u0022,\\u0022amount\\u0022:119980.0,\\u0022return_url\\u0022:\\u0022http://localhost:3000/confirmacion-pago\\u0022}\",\"OriginalResponse\":\"{\\u0022token\\u0022:\\u002201abd0be704925f22f68295ac17ab28c75178a0b26affb1071878066aa70a92e\\u0022,\\u0022url\\u0022:\\u0022https://webpay3gint.transbank.cl/webpayserver/initTransaction\\u0022}\"}'),(6,8,119980.00,'2025-07-02 15:50:45','PENDIENTE','WEBPAY','01ab2fbdc5adb5d427bf6f407f0b333b74bb889281a06900555f856708b5df63','01ab2fbdc5adb5d427bf6f407f0b333b74bb889281a06900555f856708b5df63','{\"Token\":\"01ab2fbdc5adb5d427bf6f407f0b333b74bb889281a06900555f856708b5df63\",\"Url\":\"https://webpay3gint.transbank.cl/webpayserver/initTransaction\",\"OriginalRequest\":\"{\\u0022buy_order\\u0022:\\u0022ORD-8\\u0022,\\u0022session_id\\u0022:\\u0022anon-1751485844209\\u0022,\\u0022amount\\u0022:119980.0,\\u0022return_url\\u0022:\\u0022http://localhost:3000/confirmacion-pago\\u0022}\",\"OriginalResponse\":\"{\\u0022token\\u0022:\\u002201ab2fbdc5adb5d427bf6f407f0b333b74bb889281a06900555f856708b5df63\\u0022,\\u0022url\\u0022:\\u0022https://webpay3gint.transbank.cl/webpayserver/initTransaction\\u0022}\"}'),(7,9,119980.00,'2025-07-02 16:11:31','PENDIENTE','WEBPAY','01ab29f8d7f85b6a2913a91493530000aef317b14ebfc22fa3a976da1143ae0f','01ab29f8d7f85b6a2913a91493530000aef317b14ebfc22fa3a976da1143ae0f','{\"Token\":\"01ab29f8d7f85b6a2913a91493530000aef317b14ebfc22fa3a976da1143ae0f\",\"Url\":\"https://webpay3gint.transbank.cl/webpayserver/initTransaction\",\"OriginalRequest\":\"{\\u0022buy_order\\u0022:\\u0022ORD-9\\u0022,\\u0022session_id\\u0022:\\u0022anon-1751487090568\\u0022,\\u0022amount\\u0022:119980.0,\\u0022return_url\\u0022:\\u0022http://localhost:3000/confirmacion-pago\\u0022}\",\"OriginalResponse\":\"{\\u0022token\\u0022:\\u002201ab29f8d7f85b6a2913a91493530000aef317b14ebfc22fa3a976da1143ae0f\\u0022,\\u0022url\\u0022:\\u0022https://webpay3gint.transbank.cl/webpayserver/initTransaction\\u0022}\"}');
 /*!40000 ALTER TABLE `pagos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -910,18 +935,11 @@ CREATE TABLE `pedidos` (
   `total` decimal(10,2) DEFAULT NULL,
   `observaciones` varchar(500) DEFAULT NULL,
   `direccion_entrega` varchar(200) DEFAULT NULL,
-<<<<<<< HEAD
   `numero_pedido` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `cliente_id` (`usuario_id`),
   CONSTRAINT `pedidos_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `clientes` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-=======
-  PRIMARY KEY (`id`),
-  KEY `cliente_id` (`usuario_id`),
-  CONSTRAINT `pedidos_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `clientes` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
->>>>>>> origin/main
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -930,11 +948,7 @@ CREATE TABLE `pedidos` (
 
 LOCK TABLES `pedidos` WRITE;
 /*!40000 ALTER TABLE `pedidos` DISABLE KEYS */;
-<<<<<<< HEAD
-INSERT INTO `pedidos` VALUES (1,1,'2025-05-12 00:00:00','Enviado','2025-05-26 11:24:22',NULL,1,NULL,85970.00,NULL,NULL,NULL),(2,1,'2025-07-02 02:21:19','PAGADO','2025-07-02 02:21:19',NULL,1,NULL,85970.00,'Pedido pagado con Webpay',NULL,NULL);
-=======
-INSERT INTO `pedidos` VALUES (1,1,'2025-05-12 00:00:00','Enviado','2025-05-26 11:24:22',NULL,1,NULL,85970.00,NULL,NULL);
->>>>>>> origin/main
+INSERT INTO `pedidos` VALUES (1,1,'2025-05-12 00:00:00','Enviado','2025-05-26 11:24:22',NULL,1,NULL,85970.00,NULL,NULL,NULL),(2,1,'2025-07-02 02:21:19','PAGADO','2025-07-02 02:21:19',NULL,1,NULL,85970.00,'Pedido pagado con Webpay',NULL,NULL),(3,NULL,'2025-07-02 07:50:16','PENDIENTE','2025-07-02 07:50:16','2025-07-02 07:50:16',1,NULL,142776.20,'','Sin dirección S/N, , ','PED-000003'),(4,NULL,'2025-07-02 07:50:32','PENDIENTE','2025-07-02 07:50:32','2025-07-02 07:50:32',1,NULL,1190.00,NULL,'Sin dirección S/N, , ','PED-000004'),(5,NULL,'2025-07-02 07:53:09','PENDIENTE','2025-07-02 07:53:09','2025-07-02 07:53:09',1,NULL,142776.20,'','Sin dirección S/N, , ','PED-000005'),(6,NULL,'2025-07-02 08:48:14','PENDIENTE','2025-07-02 08:48:14','2025-07-02 08:48:14',1,NULL,142776.20,'','Sin dirección S/N, , ','PED-000006'),(7,NULL,'2025-07-02 09:26:50','PENDIENTE','2025-07-02 09:26:50','2025-07-02 09:26:50',1,NULL,142776.20,'','Sin dirección S/N, , ','PED-000007'),(8,NULL,'2025-07-02 19:50:44','PENDIENTE','2025-07-02 19:50:44','2025-07-02 19:50:44',1,NULL,142776.20,'','Sin dirección S/N, , ','PED-000008'),(9,NULL,'2025-07-02 20:11:30','PENDIENTE','2025-07-02 20:11:30','2025-07-02 20:11:30',1,NULL,142776.20,'','Juan Perez La unión 372 , Puerto Montt, ','PED-000009');
 /*!40000 ALTER TABLE `pedidos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -959,21 +973,14 @@ CREATE TABLE `productos` (
   `fecha_creacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fecha_modificacion` datetime DEFAULT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT '1',
-<<<<<<< HEAD
   `imagen_blob` longblob,
   `stock_minimo` int DEFAULT '0',
-=======
->>>>>>> origin/main
   PRIMARY KEY (`id`),
   KEY `categoria_id` (`categoria_id`),
   KEY `marca_id` (`marca_id`),
   CONSTRAINT `productos_ibfk_1` FOREIGN KEY (`categoria_id`) REFERENCES `categorias` (`id`),
   CONSTRAINT `productos_ibfk_2` FOREIGN KEY (`marca_id`) REFERENCES `marcas` (`id`)
-<<<<<<< HEAD
 ) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-=======
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
->>>>>>> origin/main
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -982,11 +989,7 @@ CREATE TABLE `productos` (
 
 LOCK TABLES `productos` WRITE;
 /*!40000 ALTER TABLE `productos` DISABLE KEYS */;
-<<<<<<< HEAD
 INSERT INTO `productos` VALUES (1,'Taladro Percutor 650W','HE100','Taladro eléctrico de 650W',59990.00,25,1,NULL,'/images/productos/Taladro percutor 650W.webp',NULL,'2025-05-26 03:35:46',NULL,1,NULL,0),(2,'Martillo de Carpintero','HM101','Martillo de acero de 16 oz',9990.00,50,2,NULL,'/images/productos/MARTILLO de carpintero.webp',NULL,'2025-05-26 03:35:46',NULL,1,NULL,0),(3,'Tijera de Podar','JA102','Tijera para poda de jardín',12990.00,30,3,NULL,'/images/productos/tijera para podar.webp',NULL,'2025-05-26 03:35:46',NULL,1,NULL,0),(4,'Cemento Portland 25kg','CO103','Bolsa de cemento de 25kg',5990.00,100,4,NULL,'/images/productos/cemento portland.jpeg',NULL,'2025-05-26 03:35:46','2025-05-26 14:44:13',1,NULL,0),(5,'Cable Eléctrico 2x1.5mm','EL104','Cable para instalaciones eléctricas',1990.00,200,5,NULL,'/images/productos/cable electrico (cordón).webp',NULL,'2025-05-26 03:35:46',NULL,1,NULL,0),(6,'Llave Stilson 14\"','PL105','Llave ajustable para plomería',14990.00,40,6,NULL,'/images/productos/Llave Stilson 14.webp',NULL,'2025-05-26 03:35:46',NULL,1,NULL,0),(7,'Rodillo para Pintura 9\"','PA106','Rodillo de espuma para pintura',3990.00,60,7,NULL,'/images/productos/Rodillo para Pintura 9.webp',NULL,'2025-05-26 03:35:46',NULL,1,NULL,0),(8,'Casco de Seguridad Amarillo','SI107','Casco de protección industrial',7990.00,35,8,NULL,'/images/productos/Casco de Seguridad Amarillo.webp',NULL,'2025-05-26 03:35:46',NULL,1,NULL,0),(10,'Destornillador','P002','Destornillador de cruz',1990.00,50,1,2,'/images/productos/Destornillador.webp','Material: acero','2025-05-26 03:37:16',NULL,1,NULL,0),(11,'Alicate','P003','Alicate universal',2990.00,30,2,1,'/images/productos/Alicate.webp','Longitud: 15cm','2025-05-26 03:37:16',NULL,1,NULL,0),(12,'Taladro','P004','Taladro eléctrico 500W',24990.00,10,3,3,'/images/productos/Taladro.webp','Incluye brocas','2025-05-26 03:37:16',NULL,1,NULL,0),(13,'Llave Inglesa','P005','Llave ajustable',3990.00,25,2,2,'/images/productos/Llave Inglesa.webp','Apertura máxima: 30mm','2025-05-26 03:37:16',NULL,1,NULL,0),(14,'Martillo','P001','Martillo de acero',4990.00,120,1,2,'/images/productos/martillo acero.jpeg','Peso: 500g','2025-05-26 08:03:22','2025-05-26 16:47:54',1,NULL,0),(16,'Sierra Circular 1200W','HE200','Sierra eléctrica para madera',89990.00,15,1,NULL,'/images/productos/cierra circular.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(17,'Cincel de Acero','HM202','Cincel resistente para mampostería',3990.00,25,2,NULL,'/images/productos/cincel acero.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(18,'Regadera Plástica','JA203','Regadera de 5 litros',2990.00,20,3,NULL,'/images/productos/regadera plastica.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(19,'Rastrillo Metálico','JA204','Rastrillo para hojas y césped',4990.00,18,3,NULL,'/images/productos/rastrillo metalico.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(20,'Ladrillo Hueco','CO204','Ladrillo para construcción',350.00,500,4,NULL,'/images/productos/ladrillo huevo.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(21,'Arena Fina 25kg','CO205','Saco de arena fina',2500.00,40,4,NULL,'/images/productos/arena fina.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(22,'Pala de Punta','CO206','Pala para construcción',7990.00,15,4,NULL,'/images/productos/pala de punta.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(23,'Interruptor Simple','EL201','Interruptor eléctrico de pared',1200.00,100,5,NULL,'/images/productos/interruptor simple.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(24,'Toma Corriente','EL202','Toma corriente doble',1500.00,80,5,NULL,'/images/productos/toma corriente.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(25,'Foco LED 10W','EL203','Foco LED bajo consumo',3500.00,60,5,NULL,'/images/productos/foco led.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(26,'Codo PVC 90°','PL201','Codo de PVC para cañería',800.00,200,6,NULL,'/images/productos/codo pvc.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(27,'Teflón','PL202','Cinta de teflón para sellado',500.00,150,6,NULL,'/images/productos/teflon.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(28,'Llave de Paso','PL203','Llave de paso para agua',2500.00,70,6,NULL,'/images/productos/llave de paso.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(29,'Brocha 2\"','PA201','Brocha para pintura',1200.00,100,7,NULL,'/images/productos/brocha 2.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(30,'Pintura Látex 1L','PA202','Pintura blanca para interior',6500.00,50,7,NULL,'/images/productos/pintura latex 1l.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(31,'Cinta de Enmascarar','PA203','Cinta para acabados de pintura',900.00,120,7,NULL,'/images/productos/cinta enmascarar.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(32,'Guantes de Nitrilo','SI201','Guantes resistentes para trabajo',1990.00,50,8,NULL,'/images/productos/guantes de nitrilo.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(33,'Botas de Seguridad','SI202','Botas con punta de acero',24990.00,10,8,NULL,'/images/productos/botas de seguridad.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0),(34,'Protector Auditivo','SI203','Orejeras para protección auditiva',5990.00,18,8,NULL,'/images/productos/protector auditivo.webp',NULL,'2025-06-27 22:26:15',NULL,1,NULL,0);
-=======
-INSERT INTO `productos` VALUES (1,'Taladro Percutor 650W','HE100','Taladro eléctrico de 650W',59990.00,25,1,NULL,'Sin imagen',NULL,'2025-05-26 03:35:46',NULL,1),(2,'Martillo de Carpintero','HM101','Martillo de acero de 16 oz',9990.00,50,2,NULL,'Sin imagen',NULL,'2025-05-26 03:35:46',NULL,1),(3,'Tijera de Podar','JA102','Tijera para poda de jardín',12990.00,30,3,NULL,'Sin imagen',NULL,'2025-05-26 03:35:46',NULL,1),(4,'Cemento Portland 25kg','CO103','Bolsa de cemento de 25kg',5990.00,100,4,NULL,'Sin imagen',NULL,'2025-05-26 03:35:46','2025-05-26 14:44:13',1),(5,'Cable Eléctrico 2x1.5mm','EL104','Cable para instalaciones eléctricas',1990.00,200,5,NULL,'Sin imagen',NULL,'2025-05-26 03:35:46',NULL,1),(6,'Llave Stilson 14\"','PL105','Llave ajustable para plomería',14990.00,40,6,NULL,'Sin imagen',NULL,'2025-05-26 03:35:46',NULL,1),(7,'Rodillo para Pintura 9\"','PA106','Rodillo de espuma para pintura',3990.00,60,7,NULL,'Sin imagen',NULL,'2025-05-26 03:35:46',NULL,1),(8,'Casco de Seguridad Amarillo','SI107','Casco de protección industrial',7990.00,35,8,NULL,'Sin imagen',NULL,'2025-05-26 03:35:46',NULL,1),(10,'Destornillador','P002','Destornillador de cruz',1990.00,50,1,2,'https://ejemplo.com/destornillador.jpg','Material: acero','2025-05-26 03:37:16',NULL,1),(11,'Alicate','P003','Alicate universal',2990.00,30,2,1,'Sin imagen','Longitud: 15cm','2025-05-26 03:37:16',NULL,1),(12,'Taladro','P004','Taladro eléctrico 500W',24990.00,10,3,3,'https://ejemplo.com/taladro.jpg','Incluye brocas','2025-05-26 03:37:16',NULL,1),(13,'Llave Inglesa','P005','Llave ajustable',3990.00,25,2,2,'Sin imagen','Apertura máxima: 30mm','2025-05-26 03:37:16',NULL,1),(14,'Martillo','P001','Martillo de acero',4990.00,120,1,2,'https://ejemplo.com/martillo.jpg','Peso: 500g','2025-05-26 08:03:22','2025-05-26 16:47:54',1);
->>>>>>> origin/main
 /*!40000 ALTER TABLE `productos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1142,11 +1145,7 @@ CREATE TABLE `usuarios` (
 
 LOCK TABLES `usuarios` WRITE;
 /*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
-<<<<<<< HEAD
 INSERT INTO `usuarios` VALUES (1,'Juan Pérez','Pérez','juan@ferremas.cl','hashed123','12.345.678-9',NULL,'administrador',1,'2025-05-23 01:54:39',NULL),(2,'María González',NULL,'maria@ferremas.cl','hashed123','98.765.432-1',NULL,'vendedor',1,NULL,NULL),(3,'Carlos López',NULL,'carlos@cliente.cl','hashed123','11.223.344-5',NULL,'bodeguero',1,NULL,NULL),(4,'Ana','Martínez','ana@reparto.cl','hashed123','22.334.455-6','987654321','contador',1,'2025-05-26 07:03:55','2025-05-26 07:03:55'),(5,'Camila','Rojas','camila.rojas@mail.com','$2a$11$MNp.VB8mbwl4InfCtjRVzulCZwo1uLfVt0e/hG373060eZxxgesK6','18.765.432-1','+56987654321','bodeguero',1,'2025-05-23 03:10:02',NULL),(9,'Javier','Pérez','javier.perez@ferremas.cl','$2a$11$PGAUnNputAKmko9NJeyCXOD8t3bkhIi22G5JlMK3/57qjFlJJOQK6','22.334.556-7','+56912345678','bodeguero',1,'2025-05-23 03:11:58',NULL),(12,'Sofía','Valdés','sofia.valdes@ferremas.cl','$2a$11$KpEOY61ObJjYwggNffvICO4Pfb7vWaMlAkFiJkBXrqw9GW2m/7GpW','10.234.567-8','+56991234567','bodeguero',1,'2025-05-23 12:19:14',NULL),(13,'Paloma','Tamayo','palomatamayo@ferremas.cl','$2a$11$QWcZdgHeFIoq82K74LGYzezVFysw3zP.dC3a2vSKzn1fbcInpGX2W','12345678-9','123456789','administrador',1,'2025-05-26 06:54:40','2025-05-26 06:54:40'),(14,'Diego','Ramírez','diego.ramirez@ferremas.cl','$2a$11$kx0eIaGO6nc4oz.YZxL1YOhA50/IP.Aw3r6mKcAeRFGLuPIetUoYO','15.678.234-5','+56987654321','vendedor',1,'2025-05-25 18:01:25',NULL),(15,'Valentina','Muñoz','valentina.munoz@ferremas.cl','$2a$11$3KlA3ikGxW5RVNC31MMWYu5zE6uTnxfv/3cRoyUzwvh4QlMDVbiUq','21.345.678-9','+56991234567','bodeguero',1,'2025-05-25 18:25:58',NULL),(16,'Bruno','Tamayo','brunotamayo@example.com','$2a$11$OWWrJ7dRgi9sT46ISzH/Jug5t6J8nnuwGnrSRBlcClPC3pR7Y3ReG','28446521-0','+56966744055','administrador',1,'2025-05-26 02:58:13',NULL);
-=======
-INSERT INTO `usuarios` VALUES (1,'Juan Pérez','Pérez','juan@ferremas.cl','hashed123','12.345.678-9',NULL,'administrador',1,'2025-05-23 01:54:39',NULL),(2,'María González',NULL,'maria@ferremas.cl','hashed123','98.765.432-1',NULL,'vendedor',1,NULL,NULL),(3,'Carlos López',NULL,'carlos@cliente.cl','hashed123','11.223.344-5',NULL,'bodeguero',1,NULL,NULL),(4,'Ana','Martínez','ana@reparto.cl','hashed123','22.334.455-6','987654321','contador',1,'2025-05-26 07:03:55','2025-05-26 07:03:55'),(5,'Camila','Rojas','camila.rojas@mail.com','$2a$11$MNp.VB8mbwl4InfCtjRVzulCZwo1uLfVt0e/hG373060eZxxgesK6','18.765.432-1','+56987654321','bodeguero',1,'2025-05-23 03:10:02',NULL),(9,'Javier','Pérez','javier.perez@ferremas.cl','$2a$11$PGAUnNputAKmko9NJeyCXOD8t3bkhIi22G5JlMK3/57qjFlJJOQK6','22.334.556-7','+56912345678','bodeguero',1,'2025-05-23 03:11:58',NULL),(12,'Sofía','Valdés','sofia.valdes@ferremas.cl','$2a$11$KpEOY61ObJjYwggNffvICO4Pfb7vWaMlAkFiJkBXrqw9GW2m/7GpW','10.234.567-8','+56991234567','bodeguero',1,'2025-05-23 12:19:14',NULL),(13,'Paloma','Tamayo','palomatamayo@ferremas.cl','$2a$11$gSuRmEZ6bDL8Tjf1dFWXa.BkH9FDPkUzsST.5OQCOVBeb5ppoBwj6','12345678-9','123456789','administrador',1,'2025-05-26 06:54:40','2025-05-26 06:54:40'),(14,'Diego','Ramírez','diego.ramirez@ferremas.cl','$2a$11$kx0eIaGO6nc4oz.YZxL1YOhA50/IP.Aw3r6mKcAeRFGLuPIetUoYO','15.678.234-5','+56987654321','vendedor',1,'2025-05-25 18:01:25',NULL),(15,'Valentina','Muñoz','valentina.munoz@ferremas.cl','$2a$11$3KlA3ikGxW5RVNC31MMWYu5zE6uTnxfv/3cRoyUzwvh4QlMDVbiUq','21.345.678-9','+56991234567','bodeguero',1,'2025-05-25 18:25:58',NULL),(16,'Bruno','Tamayo','brunotamayo@example.com','$2a$11$OWWrJ7dRgi9sT46ISzH/Jug5t6J8nnuwGnrSRBlcClPC3pR7Y3ReG','28446521-0','+56966744055','administrador',1,'2025-05-26 02:58:13',NULL);
->>>>>>> origin/main
 /*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1960,8 +1959,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
-<<<<<<< HEAD
--- Dump completed on 2025-07-02  3:16:30
-=======
--- Dump completed on 2025-05-26 22:46:50
->>>>>>> origin/main
+-- Dump completed on 2025-07-02 17:55:09

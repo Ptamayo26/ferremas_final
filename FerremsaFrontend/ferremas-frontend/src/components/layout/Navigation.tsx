@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getRoleDisplayName, isWorkerRole } from '../../utils/roleRedirect';
 import CarritoButton from '../ui/CarritoButton';
 import { FaBars } from 'react-icons/fa';
+import { FiLogOut } from 'react-icons/fi';
 
 const Navigation: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -91,13 +92,26 @@ const Navigation: React.FC = () => {
             />
           </div>
 
-          {/* Ubicación, login y carrito a la derecha */}
+          {/* Acciones de usuario y carrito a la derecha */}
           <div className="flex items-center gap-3 min-w-max">
-            <div className="text-right mr-2 hidden md:block">
-              <span className="text-ferremas-gray-100 text-sm font-medium">Sucursal Central</span>
-              <br />
-              <span className="text-ferremas-accent text-xs cursor-pointer">Cambiar sucursal</span>
-            </div>
+            {isAuthenticated && user && (
+              <>
+                <Link
+                  to="/mi-cuenta"
+                  className="btn-primary text-sm px-3 py-1 h-8"
+                >
+                  Mi Perfil
+                </Link>
+                <button
+                  onClick={logout}
+                  className="ml-2 flex items-center gap-1 px-3 py-1 h-8 rounded bg-ferremas-danger text-white hover:bg-ferremas-danger/80 transition-colors text-sm"
+                  title="Cerrar sesión"
+                >
+                  <FiLogOut size={18} />
+                  Cerrar sesión
+                </button>
+              </>
+            )}
             {!isAuthenticated && (
               <Link 
                 to="/login" 
@@ -105,14 +119,6 @@ const Navigation: React.FC = () => {
               >
                 Iniciar Sesión
               </Link>
-            )}
-            {isAuthenticated && user && (
-              <button
-                onClick={logout}
-                className="text-sm text-ferremas-gray-200 hover:text-ferremas-secondary transition-colors px-2 py-1 h-8"
-              >
-                Cerrar Sesión
-              </button>
             )}
             <CarritoButton onClick={() => navigate('/carrito')} />
           </div>

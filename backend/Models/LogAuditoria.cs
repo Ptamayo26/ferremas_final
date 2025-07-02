@@ -13,15 +13,15 @@ namespace Ferremas.Api.Models
         public int UsuarioId { get; set; } // ID del usuario que realizó la acción
 
         [ForeignKey("UsuarioId")]
-        public virtual Usuario Usuario { get; set; }
+        public virtual Usuario Usuario { get; set; } = null!;
 
         [Required]
         [StringLength(50)]
-        public string Accion { get; set; } // Ej: "CrearUsuario", "ActualizarRol", "DesactivarUsuario"
+        public string Accion { get; set; } = string.Empty; // Ej: "CrearUsuario", "ActualizarRol", "DesactivarUsuario"
 
         [Required]
         [StringLength(100)]
-        public string Entidad { get; set; } // Ej: "Usuarios", "Productos"
+        public string Entidad { get; set; } = string.Empty; // Ej: "Usuarios", "Productos"
 
         public int? EntidadId { get; set; } // ID del registro afectado
 
