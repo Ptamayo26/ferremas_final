@@ -35,6 +35,10 @@ namespace Ferremas.Api.DTOs
         // Nuevos campos para RUT y Correo
         public string? Rut { get; set; }
         public string? Correo { get; set; }
+
+        // Nuevos campos para envío
+        public string? MetodoEnvio { get; set; } // "Chilexpress", "Starken", "Shipit"
+        public decimal? CostoEnvio { get; set; }
     }
 
     public class CheckoutResponseDTO
@@ -59,6 +63,8 @@ namespace Ferremas.Api.DTOs
         public int TotalItems { get; set; }
         public ClienteResumenDTO Cliente { get; set; } = new();
         public DireccionDTO DireccionEnvio { get; set; } = new();
+        public string? MetodoEnvio { get; set; }
+        public decimal CostoEnvio { get; set; }
     }
 
     public class ClienteResumenDTO

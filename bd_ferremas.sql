@@ -68,7 +68,7 @@ CREATE TABLE `carrito` (
 
 LOCK TABLES `carrito` WRITE;
 /*!40000 ALTER TABLE `carrito` DISABLE KEYS */;
-INSERT INTO `carrito` VALUES (3,13,1,2,'2025-07-03 19:12:56',1),(4,13,3,1,'2025-07-03 17:15:56',1),(5,13,4,2,'2025-07-03 19:19:13',1);
+INSERT INTO `carrito` VALUES (3,13,1,1,'2025-07-03 19:12:56',0),(4,13,3,1,'2025-07-03 17:15:56',0),(5,13,4,1,'2025-07-03 19:19:13',0);
 /*!40000 ALTER TABLE `carrito` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -123,7 +123,7 @@ CREATE TABLE `clientes` (
   `usuario_id` int DEFAULT NULL,
   `correoElectronico` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=65 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -132,7 +132,7 @@ CREATE TABLE `clientes` (
 
 LOCK TABLES `clientes` WRITE;
 /*!40000 ALTER TABLE `clientes` DISABLE KEYS */;
-INSERT INTO `clientes` VALUES (1,'+56 9 1234 5678',NULL,NULL,'12345678-0','cliente01@ferremas.cl',NULL,NULL,1,NULL,NULL),(2,'+56934567890','Javier','Ramírez','56789012-3','javier.ramirez@example.com','2025-05-25 17:09:07','2025-05-25 17:46:47',0,NULL,'cliente1@ferremas.cl'),(3,'+56987654321','Valentina','Muñoz','34567890-1','valentina.munoz2@example.com','2025-05-25 17:31:26','2025-05-25 17:47:02',0,NULL,NULL),(4,'+56923456789','Camila','Pérez','45678901-2','camila.perez@example.com','2025-05-25 17:42:13','2025-05-25 17:42:13',1,NULL,NULL),(21,'+56944445555','Paloma','Tamayo','45678901-3','palomatamayo@ferremas.cl','2025-07-02 17:19:15','2025-07-03 14:18:43',1,13,NULL),(23,'+56955556666','Juan','Pérez','56789012-4','cliente1@ferremas.cl',NULL,NULL,1,1,NULL),(25,'+56911112222','María González','Pérez','12345678-0','cliente02@ferremas.cl',NULL,NULL,1,2,NULL),(26,'+56911112222','Carlos López','Pérez','12345678-0','cliente03@ferremas.cl',NULL,NULL,1,3,NULL),(27,'+56911112222','Ana','Martínez','12345678-0','cliente04@ferremas.cl',NULL,NULL,1,4,NULL),(28,'+56911112222','Camila','Rojas','12345678-0','cliente05@ferremas.cl',NULL,NULL,1,5,NULL),(29,'+56911112222','Javier','Pérez','12345678-0','cliente06@ferremas.cl',NULL,NULL,1,9,NULL),(30,'+56911112222','Sofía','Valdés','12345678-0','cliente07@ferremas.cl',NULL,NULL,1,12,NULL),(31,'+56911112222','Diego','Ramírez','12345678-0','cliente08@ferremas.cl',NULL,NULL,1,14,NULL),(32,'+56911112222','Valentina','Muñoz','12345678-0','cliente09@ferremas.cl',NULL,NULL,1,15,NULL),(33,'+56911112222','Bruno','Tamayo','12345678-0','cliente10@ferremas.cl',NULL,NULL,1,16,NULL),(40,'+56911112222','Carlos','López','12345678-9','cliente11@ferremas.cl',NULL,NULL,1,NULL,'carlos.lopez@ferremas.cl'),(41,'+56933334444','María','González','98765432-1','cliente12@ferremas.cl',NULL,NULL,1,NULL,'maria.gonzalez@ferremas.cl'),(42,'+56923456789','Camila','Pérez','45678901-2','cliente13@ferremas.cl',NULL,NULL,1,NULL,'camila.perez@example.com'),(43,'+56955556666','Paloma','Tamayo','11222333-4','cliente14@ferremas.cl',NULL,NULL,1,NULL,'palomatamayo@ferremas.cl'),(44,'+56977778888','Javier','Pérez','22334455-6','cliente15@ferremas.cl',NULL,NULL,1,NULL,'javier.perez@ferremas.cl'),(45,'+56988889999','Juan','Pérez','33445566-7','cliente16@ferremas.cl',NULL,NULL,1,NULL,'juan.perez@ferremas.cl'),(46,'+56912345678','Diego','Ramírez','44556677-8','cliente17@ferremas.cl',NULL,NULL,1,NULL,'diego.ramirez@ferremas.cl'),(47,'+56987654321','Camila','Rojas','55667788-9','cliente18@ferremas.cl',NULL,NULL,1,NULL,'camila.rojas@ferremas.cl'),(48,'+56911223344','Bruno','Tamayo','66778899-0','cliente19@ferremas.cl',NULL,NULL,1,NULL,'bruno.tamayo@ferremas.cl'),(49,'+56922334455','Sofía','Valdés','77889900-1','cliente20@ferremas.cl',NULL,NULL,1,NULL,'sofia.valdes@ferremas.cl'),(50,'+56933445566','Ana','Martínez','88990011-2','cliente21@ferremas.cl',NULL,NULL,1,NULL,'ana.martinez@ferremas.cl'),(51,'+56944556677','Valentina','Muñoz','99001122-3','cliente22@ferremas.cl',NULL,NULL,1,NULL,'valentina.munoz@ferremas.cl'),(52,'+56911112222','Cliente','Anónimo','12345678-0','cliente23@ferremas.cl',NULL,'2025-07-03 02:00:01',0,NULL,'anonimo@ferremas.cl'),(53,'+56911112222','Cliente','Anónimo','12345678-0','cliente24@ferremas.cl',NULL,NULL,1,NULL,'anonimo@ferremas.cl'),(54,'+56911112222','Cliente','Anónimo','12345678-0','cliente25@ferremas.cl',NULL,NULL,1,NULL,'anonimo@ferremas.cl'),(55,'+56900000000','Pedro','Inactivo','11111111-1','cliente26@ferremas.cl',NULL,NULL,0,NULL,'pedro.inactivo@ferremas.cl'),(56,'966744011','Hardy','Vega','17144575-2','hardy@ferremas.cl','2025-07-03 02:12:25',NULL,1,17,NULL),(57,'','Cliente Anónimo','','1111111111111111111','1111111111111111111111','2025-07-03 18:49:34',NULL,1,NULL,NULL),(58,'','Cliente Anónimo','','190374661','PALOMA@FERREMAS.CL','2025-07-03 18:57:56',NULL,1,NULL,NULL),(59,'','Cliente Anónimo','','12345678-9','test@test.com','2025-07-03 19:01:21',NULL,1,NULL,NULL),(60,'','190374661','','190374661','PALOMA@FERREMAS.CL','2025-07-03 19:04:27',NULL,1,NULL,NULL),(61,'','190374661','','190374661','PALOMA@FERREMAS.CL','2025-07-03 19:04:37',NULL,1,NULL,NULL),(62,'','190374661','','190374661','PALOMA@FERREMAS.CL','2025-07-03 19:06:48',NULL,1,NULL,NULL),(63,'','19037466-1','','19037466-1','paloma@gmail.com','2025-07-03 19:13:49',NULL,1,NULL,NULL);
+INSERT INTO `clientes` VALUES (1,'+56 9 1234 5678',NULL,NULL,'12345678-0','cliente01@ferremas.cl',NULL,NULL,1,NULL,NULL),(2,'+56934567890','Javier','Ramírez','56789012-3','javier.ramirez@example.com','2025-05-25 17:09:07','2025-05-25 17:46:47',0,NULL,'cliente1@ferremas.cl'),(3,'+56987654321','Valentina','Muñoz','34567890-1','valentina.munoz2@example.com','2025-05-25 17:31:26','2025-05-25 17:47:02',0,NULL,NULL),(4,'+56923456789','Camila','Pérez','45678901-2','camila.perez@example.com','2025-05-25 17:42:13','2025-05-25 17:42:13',1,NULL,NULL),(21,'+56944445555','Paloma','Tamayo','45678901-3','palomatamayo@ferremas.cl','2025-07-02 17:19:15','2025-07-03 14:18:43',1,13,NULL),(23,'+56955556666','Juan','Pérez','56789012-4','cliente1@ferremas.cl',NULL,NULL,1,1,NULL),(25,'+56911112222','María González','Pérez','12345678-0','cliente02@ferremas.cl',NULL,NULL,1,2,NULL),(26,'+56911112222','Carlos López','Pérez','12345678-0','cliente03@ferremas.cl',NULL,NULL,1,3,NULL),(27,'+56911112222','Ana','Martínez','12345678-0','cliente04@ferremas.cl',NULL,NULL,1,4,NULL),(28,'+56911112222','Camila','Rojas','12345678-0','cliente05@ferremas.cl',NULL,NULL,1,5,NULL),(29,'+56911112222','Javier','Pérez','12345678-0','cliente06@ferremas.cl',NULL,NULL,1,9,NULL),(30,'+56911112222','Sofía','Valdés','12345678-0','cliente07@ferremas.cl',NULL,NULL,1,12,NULL),(31,'+56911112222','Diego','Ramírez','12345678-0','cliente08@ferremas.cl',NULL,NULL,1,14,NULL),(32,'+56911112222','Valentina','Muñoz','12345678-0','cliente09@ferremas.cl',NULL,NULL,1,15,NULL),(33,'+56911112222','Bruno','Tamayo','12345678-0','cliente10@ferremas.cl',NULL,NULL,1,16,NULL),(40,'+56911112222','Carlos','López','12345678-9','cliente11@ferremas.cl',NULL,NULL,1,NULL,'carlos.lopez@ferremas.cl'),(41,'+56933334444','María','González','98765432-1','cliente12@ferremas.cl',NULL,NULL,1,NULL,'maria.gonzalez@ferremas.cl'),(42,'+56923456789','Camila','Pérez','45678901-2','cliente13@ferremas.cl',NULL,NULL,1,NULL,'camila.perez@example.com'),(43,'+56955556666','Paloma','Tamayo','11222333-4','cliente14@ferremas.cl',NULL,NULL,1,NULL,'palomatamayo@ferremas.cl'),(44,'+56977778888','Javier','Pérez','22334455-6','cliente15@ferremas.cl',NULL,NULL,1,NULL,'javier.perez@ferremas.cl'),(45,'+56988889999','Juan','Pérez','33445566-7','cliente16@ferremas.cl',NULL,NULL,1,NULL,'juan.perez@ferremas.cl'),(46,'+56912345678','Diego','Ramírez','44556677-8','cliente17@ferremas.cl',NULL,NULL,1,NULL,'diego.ramirez@ferremas.cl'),(47,'+56987654321','Camila','Rojas','55667788-9','cliente18@ferremas.cl',NULL,NULL,1,NULL,'camila.rojas@ferremas.cl'),(48,'+56911223344','Bruno','Tamayo','66778899-0','cliente19@ferremas.cl',NULL,NULL,1,NULL,'bruno.tamayo@ferremas.cl'),(49,'+56922334455','Sofía','Valdés','77889900-1','cliente20@ferremas.cl',NULL,NULL,1,NULL,'sofia.valdes@ferremas.cl'),(50,'+56933445566','Ana','Martínez','88990011-2','cliente21@ferremas.cl',NULL,NULL,1,NULL,'ana.martinez@ferremas.cl'),(51,'+56944556677','Valentina','Muñoz','99001122-3','cliente22@ferremas.cl',NULL,NULL,1,NULL,'valentina.munoz@ferremas.cl'),(52,'+56911112222','Cliente','Anónimo','12345678-0','cliente23@ferremas.cl',NULL,'2025-07-03 02:00:01',0,NULL,'anonimo@ferremas.cl'),(53,'+56911112222','Cliente','Anónimo','12345678-0','cliente24@ferremas.cl',NULL,NULL,1,NULL,'anonimo@ferremas.cl'),(54,'+56911112222','Cliente','Anónimo','12345678-0','cliente25@ferremas.cl',NULL,NULL,1,NULL,'anonimo@ferremas.cl'),(55,'+56900000000','Pedro','Inactivo','11111111-1','cliente26@ferremas.cl',NULL,NULL,0,NULL,'pedro.inactivo@ferremas.cl'),(56,'966744011','Hardy','Vega','17144575-2','hardy@ferremas.cl','2025-07-03 02:12:25',NULL,1,17,NULL),(57,'','Cliente Anónimo','','1111111111111111111','1111111111111111111111','2025-07-03 18:49:34',NULL,1,NULL,NULL),(58,'','Cliente Anónimo','','190374661','PALOMA@FERREMAS.CL','2025-07-03 18:57:56',NULL,1,NULL,NULL),(59,'','Cliente Anónimo','','12345678-9','test@test.com','2025-07-03 19:01:21',NULL,1,NULL,NULL),(60,'','190374661','','190374661','PALOMA@FERREMAS.CL','2025-07-03 19:04:27',NULL,1,NULL,NULL),(61,'','190374661','','190374661','PALOMA@FERREMAS.CL','2025-07-03 19:04:37',NULL,1,NULL,NULL),(62,'','190374661','','190374661','PALOMA@FERREMAS.CL','2025-07-03 19:06:48',NULL,1,NULL,NULL),(63,'','19037466-1','','19037466-1','paloma@gmail.com','2025-07-03 19:13:49',NULL,1,NULL,NULL),(64,'','19037466-1','','19037466-1','palomatamayo@ferremas.cl','2025-07-03 21:45:50',NULL,1,NULL,NULL);
 /*!40000 ALTER TABLE `clientes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -421,7 +421,7 @@ CREATE TABLE `detallespedido` (
   CONSTRAINT `detallespedido_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`),
   CONSTRAINT `fk_detallespedido_pedido` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_detallespedido_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -430,6 +430,7 @@ CREATE TABLE `detallespedido` (
 
 LOCK TABLES `detallespedido` WRITE;
 /*!40000 ALTER TABLE `detallespedido` DISABLE KEYS */;
+INSERT INTO `detallespedido` VALUES (25,20,1,1,59990.00,59990.00,NULL),(26,20,3,1,12990.00,12990.00,NULL),(27,20,4,1,5990.00,5990.00,NULL),(28,21,1,1,59990.00,59990.00,NULL);
 /*!40000 ALTER TABLE `detallespedido` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -490,7 +491,7 @@ CREATE TABLE `direcciones` (
   PRIMARY KEY (`id`),
   KEY `usuario_id` (`cliente_id`),
   CONSTRAINT `direcciones_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -499,7 +500,7 @@ CREATE TABLE `direcciones` (
 
 LOCK TABLES `direcciones` WRITE;
 /*!40000 ALTER TABLE `direcciones` DISABLE KEYS */;
-INSERT INTO `direcciones` VALUES (1,1,'Av. Los Presidentes','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(2,2,'Calle Los Olmos','456',NULL,'Puerto Montt','Los Lagos',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(3,3,'Av. Los Leones','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(4,3,'Calle Providencia','789',NULL,'Providencia','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(5,4,'Pasaje Las Dalias','101',NULL,'Ñuñoa','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(6,2,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:09:07','2025-05-25 17:04:09',NULL),(7,3,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:31:26','2025-05-25 17:26:41',NULL),(8,4,'Avenida Central','321','8C','Ñuñoa','Metropolitana','7770000',1,'2025-05-25 17:42:13','2025-05-25 18:00:00',NULL),(19,21,'Contulmo','1410','','Puerto Montt','Los Lagos','',0,'2025-07-02 22:04:32','2025-07-02 22:04:32',13),(20,56,'La union','372','','Hualaihué','De los Lagos','',1,'2025-07-03 02:12:25',NULL,17),(21,21,'La unión','372','','Puerto Montt','Los Lagos','',0,'2025-07-03 14:19:15','2025-07-03 14:19:15',13),(22,57,'','','','','','',1,'2025-07-03 18:49:34','2025-07-03 18:49:34',NULL),(23,58,'','','','','','',1,'2025-07-03 18:57:56','2025-07-03 18:57:56',NULL),(24,59,'Sin dirección','S/N','','','','',1,'2025-07-03 19:01:21','2025-07-03 19:01:21',NULL),(25,60,'','','','','','',1,'2025-07-03 19:04:27','2025-07-03 19:04:27',NULL),(26,61,'','','','','','',1,'2025-07-03 19:04:37','2025-07-03 19:04:37',NULL),(27,62,'','','','','','',1,'2025-07-03 19:06:49','2025-07-03 19:06:49',NULL),(28,63,'','','','','','',1,'2025-07-03 19:13:49','2025-07-03 19:13:49',NULL);
+INSERT INTO `direcciones` VALUES (1,1,'Av. Los Presidentes','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(2,2,'Calle Los Olmos','456',NULL,'Puerto Montt','Los Lagos',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(3,3,'Av. Los Leones','123',NULL,'Santiago','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(4,3,'Calle Providencia','789',NULL,'Providencia','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(5,4,'Pasaje Las Dalias','101',NULL,'Ñuñoa','Región Metropolitana',NULL,0,'2025-05-23 01:38:20',NULL,NULL),(6,2,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:09:07','2025-05-25 17:04:09',NULL),(7,3,'Avenida Las Flores','456','12A','Las Condes','Metropolitana','7550000',1,'2025-05-25 17:31:26','2025-05-25 17:26:41',NULL),(8,4,'Avenida Central','321','8C','Ñuñoa','Metropolitana','7770000',1,'2025-05-25 17:42:13','2025-05-25 18:00:00',NULL),(19,21,'Contulmo','1410','','Puerto Montt','Los Lagos','',0,'2025-07-02 22:04:32','2025-07-02 22:04:32',13),(20,56,'La union','372','','Hualaihué','De los Lagos','',1,'2025-07-03 02:12:25',NULL,17),(21,21,'La unión','372','','Puerto Montt','Los Lagos','',0,'2025-07-03 14:19:15','2025-07-03 14:19:15',13),(22,57,'','','','','','',1,'2025-07-03 18:49:34','2025-07-03 18:49:34',NULL),(23,58,'','','','','','',1,'2025-07-03 18:57:56','2025-07-03 18:57:56',NULL),(24,59,'Sin dirección','S/N','','','','',1,'2025-07-03 19:01:21','2025-07-03 19:01:21',NULL),(25,60,'','','','','','',1,'2025-07-03 19:04:27','2025-07-03 19:04:27',NULL),(26,61,'','','','','','',1,'2025-07-03 19:04:37','2025-07-03 19:04:37',NULL),(27,62,'','','','','','',1,'2025-07-03 19:06:49','2025-07-03 19:06:49',NULL),(28,63,'','','','','','',1,'2025-07-03 19:13:49','2025-07-03 19:13:49',NULL),(29,21,'Paloma Tamayo','','','Puerto Montt','','',0,'2025-07-03 21:44:08','2025-07-03 21:44:08',13),(30,64,'Paloma Tamayo','la union 372','','Puerto Montt','','',1,'2025-07-03 21:45:50','2025-07-03 21:45:50',NULL);
 /*!40000 ALTER TABLE `direcciones` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -563,7 +564,7 @@ CREATE TABLE `envios` (
   KEY `repartidor_id` (`repartidor_id`),
   CONSTRAINT `envios_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`),
   CONSTRAINT `envios_ibfk_2` FOREIGN KEY (`repartidor_id`) REFERENCES `usuarios` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -572,6 +573,7 @@ CREATE TABLE `envios` (
 
 LOCK TABLES `envios` WRITE;
 /*!40000 ALTER TABLE `envios` DISABLE KEYS */;
+INSERT INTO `envios` VALUES (16,20,NULL,'2025-07-03 21:44:08','EN_PREPARACION','Paloma Tamayo , Puerto Montt, ','Chilexpress','',NULL,'Puerto Montt','','','19037466-1','2025-07-03 21:44:08',NULL,'19037466-1','palomatamayo@gmail.com'),(17,21,NULL,'2025-07-03 21:45:50','EN_PREPARACION','Paloma Tamayo la union 372, Puerto Montt, ','Chilexpress','',NULL,'Puerto Montt','','','19037466-1','2025-07-03 21:45:50',NULL,'19037466-1','palomatamayo@ferremas.cl');
 /*!40000 ALTER TABLE `envios` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -901,7 +903,7 @@ CREATE TABLE `pagos` (
   PRIMARY KEY (`id`),
   KEY `pedido_id` (`pedido_id`),
   CONSTRAINT `pagos_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -910,6 +912,7 @@ CREATE TABLE `pagos` (
 
 LOCK TABLES `pagos` WRITE;
 /*!40000 ALTER TABLE `pagos` DISABLE KEYS */;
+INSERT INTO `pagos` VALUES (11,20,93974.00,'2025-07-03 21:44:08','PENDIENTE','WEBPAY','01abb068b6f02049dae5cf45208d38053a9d646b0e80727b58539725156e64fa','01abb068b6f02049dae5cf45208d38053a9d646b0e80727b58539725156e64fa','{\"Token\":\"01abb068b6f02049dae5cf45208d38053a9d646b0e80727b58539725156e64fa\",\"Url\":\"https://webpay3gint.transbank.cl/webpayserver/initTransaction\",\"OriginalRequest\":\"{\\u0022buy_order\\u0022:\\u002220\\u0022,\\u0022session_id\\u0022:\\u002213-1751579048\\u0022,\\u0022amount\\u0022:93974.0,\\u0022return_url\\u0022:\\u0022http://localhost:3000/confirmacion-pago\\u0022}\",\"OriginalResponse\":\"{\\u0022token\\u0022:\\u002201abb068b6f02049dae5cf45208d38053a9d646b0e80727b58539725156e64fa\\u0022,\\u0022url\\u0022:\\u0022https://webpay3gint.transbank.cl/webpayserver/initTransaction\\u0022}\"}'),(12,21,71388.00,'2025-07-03 21:45:51','PENDIENTE','WEBPAY','01ab097a40fb637830d6dfcbfeffbb0b55e44c05e77e518c8d9efeac796ab3c9','01ab097a40fb637830d6dfcbfeffbb0b55e44c05e77e518c8d9efeac796ab3c9','{\"Token\":\"01ab097a40fb637830d6dfcbfeffbb0b55e44c05e77e518c8d9efeac796ab3c9\",\"Url\":\"https://webpay3gint.transbank.cl/webpayserver/initTransaction\",\"OriginalRequest\":\"{\\u0022buy_order\\u0022:\\u002221\\u0022,\\u0022session_id\\u0022:\\u0022anon-1751579150\\u0022,\\u0022amount\\u0022:71388.0,\\u0022return_url\\u0022:\\u0022http://localhost:3000/confirmacion-pago\\u0022}\",\"OriginalResponse\":\"{\\u0022token\\u0022:\\u002201ab097a40fb637830d6dfcbfeffbb0b55e44c05e77e518c8d9efeac796ab3c9\\u0022,\\u0022url\\u0022:\\u0022https://webpay3gint.transbank.cl/webpayserver/initTransaction\\u0022}\"}');
 /*!40000 ALTER TABLE `pagos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -939,7 +942,7 @@ CREATE TABLE `pedidos` (
   KEY `cliente_id` (`usuario_id`),
   KEY `pedidos_ibfk_cliente` (`cliente_id`),
   CONSTRAINT `pedidos_ibfk_cliente` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -948,6 +951,7 @@ CREATE TABLE `pedidos` (
 
 LOCK TABLES `pedidos` WRITE;
 /*!40000 ALTER TABLE `pedidos` DISABLE KEYS */;
+INSERT INTO `pedidos` VALUES (20,13,NULL,'2025-07-03 21:44:08','PENDIENTE','2025-07-03 21:44:08','2025-07-03 21:44:08',1,NULL,93974.00,' | RUT: 19037466-1 | Correo: palomatamayo@gmail.com','Paloma Tamayo , Puerto Montt, ','PED-000020',21),(21,NULL,NULL,'2025-07-03 21:45:50','PENDIENTE','2025-07-03 21:45:50','2025-07-03 21:45:50',1,NULL,71388.00,' | RUT: 19037466-1 | Correo: palomatamayo@ferremas.cl','Paloma Tamayo la union 372, Puerto Montt, ','PED-000021',64);
 /*!40000 ALTER TABLE `pedidos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1958,4 +1962,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-07-03 17:33:09
+-- Dump completed on 2025-07-03 17:49:07
