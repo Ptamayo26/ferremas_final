@@ -95,18 +95,17 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
 
   const fetchCarrito = async () => {
     if (!isAuthenticated) {
-      // No mostrar error, solo usar el carrito anónimo
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       const itemsData = await api.getCarrito();
-      // Si tienes un método para obtener el resumen, agrégalo aquí
-      let resumenData: CarritoResumenDTO | null = null;
+      console.log('API getCarrito:', itemsData);
+      let resumenData = null;
       if (api.getCarritoResumen) {
         resumenData = await api.getCarritoResumen();
+        console.log('API getCarritoResumen:', resumenData);
       }
       setItems(itemsData || []);
       setResumen(resumenData || null);
@@ -385,6 +384,77 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     else setCostoEnvio(0);
   }, [metodoEnvio]);
 
+  // Escuchar evento personalizado para recargar carrito anónimo
+  useEffect(() => {
+    if (!usarApi) {
+      const handler = () => {
+        const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+        setCarrito(data ? JSON.parse(data) : []);
+      };
+      window.addEventListener('carrito_anonimo_actualizado', handler);
+      return () => window.removeEventListener('carrito_anonimo_actualizado', handler);
+    }
+  }, [usarApi]);
+
+  // Depuración: mostrar el contenido del carrito local en consola
+  useEffect(() => {
+    if (!usarApi) {
+      console.log('Carrito local renderizado:', carrito);
+    }
+  }, [carrito, usarApi]);
+
+  // Cálculos para desglose de carrito anónimo
+  const neto = Math.round(total / 1.19);
+  const iva = total - neto;
+  const totalConDescuento = total - (descuentoAplicado ? montoDescuento : 0);
+  const netoConDescuento = Math.round(totalConDescuento / 1.19);
+  const ivaConDescuento = totalConDescuento - netoConDescuento;
+
+  // Cálculos para desglose de carrito autenticado (usando solo propiedades válidas)
+  const resumenNeto = resumen?.subtotal ?? 0;
+  const resumenTotal = resumen?.total ?? totalConDescuento;
+  const resumenIva = resumen ? resumenTotal - resumenNeto : 0;
+
+  // Mostrar desglose solo si hay productos en el carrito o en el resumen
+  const hayProductos = isAuthenticated ? items.length > 0 : carrito.length > 0;
+
+  // Depuración: mostrar el contenido de los estados clave antes del renderizado del desglose
+  useEffect(() => {
+    console.log('--- DEPURACIÓN CARRITO ---');
+    console.log('carrito:', carrito);
+    console.log('items:', items);
+    console.log('resumen:', resumen);
+    console.log('total:', total);
+    console.log('neto:', neto);
+    console.log('iva:', iva);
+    console.log('totalConDescuento:', totalConDescuento);
+    console.log('resumenNeto:', resumenNeto);
+    console.log('resumenIva:', resumenIva);
+    console.log('resumenTotal:', resumenTotal);
+    console.log('--------------------------');
+  }, [carrito, items, resumen, total, neto, iva, totalConDescuento, resumenNeto, resumenIva, resumenTotal]);
+
+  // Log para depuración del valor total mostrado
+  const totalMostrado = isAuthenticated ? resumenTotal : totalConDescuento;
+  useEffect(() => {
+    console.log('Valor totalMostrado:', totalMostrado);
+    if (totalMostrado === 0) {
+      console.warn('ADVERTENCIA: El total mostrado es 0, revisar cálculos y estado.');
+    }
+  }, [totalMostrado]);
+
+  // Bloque de depuración forzado para ver el desglose autenticado
+  if (isAuthenticated && items.length > 0 && resumen) {
+    return (
+      <div style={{ background: 'orange', padding: 20 }}>
+        <h2>DEBUG: DESGLOSE CARRITO (AUTENTICADO)</h2>
+        <div>Subtotal (Neto): ${resumen.subtotal}</div>
+        <div>IVA: ${resumen.total - resumen.subtotal}</div>
+        <div>Total: ${resumen.total}</div>
+      </div>
+    );
+  }
+
   if (loading) return <div>Cargando carrito...</div>;
 
   // Renderizado diferente según modoPagina
@@ -396,7 +466,6 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
             🛒 Carrito de Compras
           </h2>
         </div>
-        {/* El resto del contenido igual que antes, pero sin overlay ni botón de cerrar */}
         {error ? (
           <div className="text-center py-8">
             <p className="text-red-500">{error}</p>
@@ -490,7 +559,13 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   <div className="text-right ml-4">
                     <p className="font-semibold">${(usarApi ? (item as CarritoItemDTO).subtotal : (item as CarritoItem).precio * (item as CarritoItem).cantidad).toLocaleString('es-CL')}</p>
                     <button
-                      onClick={() => handleEliminarItem(item)}
+                      onClick={() => {
+                        if (usarApi) {
+                          handleEliminarItem(item);
+                        } else {
+                          handleEliminar(item.id);
+                        }
+                      }}
                       className="text-red-500 hover:text-red-700 text-sm"
                     >
                       Eliminar
@@ -522,6 +597,40 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                 <div className={`mt-2 text-sm ${descuentoAplicado ? 'text-green-600' : 'text-red-500'}`}>{mensajeDescuento}</div>
               )}
             </div>
+
+            {/* Desglose */}
+            {!isAuthenticated && carrito.length > 0 && (
+              <div className="border-t pt-4 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span>Subtotal (Neto):</span>
+                  <span>${neto.toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span>IVA (19%):</span>
+                  <span>${iva.toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center font-bold text-lg">
+                  <span>Total:</span>
+                  <span>${total.toLocaleString('es-CL')}</span>
+                </div>
+              </div>
+            )}
+            {isAuthenticated && items.length > 0 && resumen && (
+              <div className="border-t pt-4 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span>Subtotal (Neto):</span>
+                  <span>${resumen.subtotal.toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span>IVA (19%):</span>
+                  <span>${(resumen.total - resumen.subtotal).toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center font-bold text-lg">
+                  <span>Total:</span>
+                  <span>${resumen.total.toLocaleString('es-CL')}</span>
+                </div>
+              </div>
+            )}
 
             {/* Formulario de envío */}
             <div className="mb-4 p-4 border rounded-lg bg-gray-50">
@@ -582,6 +691,35 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   <span>Total:</span>
                   <span>${(resumen.total - (descuentoAplicado ? montoDescuento : 0) + costoEnvio).toLocaleString('es-CL') || '0'}</span>
                 </div>
+              </div>
+            )}
+
+            {/* Desglose para ambos tipos de usuario */}
+            {hayProductos ? (
+              <div className="border-t pt-4 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span>Subtotal (Neto):</span>
+                  <span>${(isAuthenticated ? resumenNeto : (descuentoAplicado ? netoConDescuento : neto)).toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span>IVA (19%):</span>
+                  <span>${(isAuthenticated ? resumenIva : (descuentoAplicado ? ivaConDescuento : iva)).toLocaleString('es-CL')}</span>
+                </div>
+                {descuentoAplicado && (
+                  <div className="flex justify-between items-center mb-2 text-green-600">
+                    <span>Descuento aplicado:</span>
+                    <span>- ${montoDescuento.toLocaleString('es-CL')}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center font-bold text-lg">
+                  <span>Total:</span>
+                  <span>${(isAuthenticated ? resumenTotal : totalConDescuento).toLocaleString('es-CL')}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center font-bold text-lg border-t pt-4 mb-6">
+                <span>Total:</span>
+                <span>$0</span>
               </div>
             )}
 
@@ -743,7 +881,13 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   <div className="text-right ml-4">
                     <p className="font-semibold">${(usarApi ? (item as CarritoItemDTO).subtotal : (item as CarritoItem).precio * (item as CarritoItem).cantidad).toLocaleString('es-CL')}</p>
                     <button
-                      onClick={() => handleEliminarItem(item)}
+                      onClick={() => {
+                        if (usarApi) {
+                          handleEliminarItem(item);
+                        } else {
+                          handleEliminar(item.id);
+                        }
+                      }}
                       className="text-red-500 hover:text-red-700 text-sm"
                     >
                       Eliminar
@@ -775,6 +919,40 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                 <div className={`mt-2 text-sm ${descuentoAplicado ? 'text-green-600' : 'text-red-500'}`}>{mensajeDescuento}</div>
               )}
             </div>
+
+            {/* Desglose */}
+            {!isAuthenticated && carrito.length > 0 && (
+              <div className="border-t pt-4 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span>Subtotal (Neto):</span>
+                  <span>${neto.toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span>IVA (19%):</span>
+                  <span>${iva.toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center font-bold text-lg">
+                  <span>Total:</span>
+                  <span>${total.toLocaleString('es-CL')}</span>
+                </div>
+              </div>
+            )}
+            {isAuthenticated && items.length > 0 && resumen && (
+              <div className="border-t pt-4 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span>Subtotal (Neto):</span>
+                  <span>${resumen.subtotal.toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span>IVA (19%):</span>
+                  <span>${(resumen.total - resumen.subtotal).toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center font-bold text-lg">
+                  <span>Total:</span>
+                  <span>${resumen.total.toLocaleString('es-CL')}</span>
+                </div>
+              </div>
+            )}
 
             {/* Formulario de envío */}
             <div className="mb-4 p-4 border rounded-lg bg-gray-50">
@@ -835,6 +1013,35 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   <span>Total:</span>
                   <span>${(resumen.total - (descuentoAplicado ? montoDescuento : 0) + costoEnvio).toLocaleString('es-CL') || '0'}</span>
                 </div>
+              </div>
+            )}
+
+            {/* Desglose para ambos tipos de usuario */}
+            {hayProductos ? (
+              <div className="border-t pt-4 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span>Subtotal (Neto):</span>
+                  <span>${(isAuthenticated ? resumenNeto : (descuentoAplicado ? netoConDescuento : neto)).toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span>IVA (19%):</span>
+                  <span>${(isAuthenticated ? resumenIva : (descuentoAplicado ? ivaConDescuento : iva)).toLocaleString('es-CL')}</span>
+                </div>
+                {descuentoAplicado && (
+                  <div className="flex justify-between items-center mb-2 text-green-600">
+                    <span>Descuento aplicado:</span>
+                    <span>- ${montoDescuento.toLocaleString('es-CL')}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center font-bold text-lg">
+                  <span>Total:</span>
+                  <span>${(isAuthenticated ? resumenTotal : totalConDescuento).toLocaleString('es-CL')}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center font-bold text-lg border-t pt-4 mb-6">
+                <span>Total:</span>
+                <span>$0</span>
               </div>
             )}
 

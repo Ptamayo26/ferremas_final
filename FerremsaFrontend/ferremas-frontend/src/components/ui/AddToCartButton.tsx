@@ -51,7 +51,7 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
       return;
     }
 
-    if (!isAuthenticated || !user || (user.rol.toLowerCase() !== 'cliente' && user.rol.toUpperCase() !== 'CLIENT')) {
+    if (!isAuthenticated || !user) {
       // Carrito anónimo en localStorage
       const data = localStorage.getItem(LOCAL_STORAGE_KEY);
       let carrito = data ? JSON.parse(data) : [];
@@ -66,6 +66,7 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
       }
       console.log('Guardando en localStorage carrito_anonimo:', carrito);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(carrito));
+      window.dispatchEvent(new Event('carrito_anonimo_actualizado'));
       setNotification({
         isOpen: true,
         type: 'success',
@@ -76,9 +77,8 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
       setShowQuantitySelector(false);
       onSuccess?.();
       return;
-    }
-
-    try {
+    } else {
+      // Carrito autenticado
       setLoading(true);
       await api.agregarAlCarrito(productoId, cantidadFinal);
       setNotification({
@@ -90,16 +90,6 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({
       setCantidad(cantidadProp ?? 1);
       setShowQuantitySelector(false);
       onSuccess?.();
-    } catch (err: any) {
-      const errorMessage = err.response?.data || 'Error al agregar al carrito';
-      setNotification({
-        isOpen: true,
-        type: 'error',
-        title: 'Error',
-        message: errorMessage
-      });
-    } finally {
-      setLoading(false);
     }
   };
 

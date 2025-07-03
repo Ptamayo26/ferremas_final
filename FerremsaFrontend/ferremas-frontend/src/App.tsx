@@ -29,6 +29,9 @@ import ConfirmacionPago from './pages/shared/ConfirmacionPago';
 // Componentes de layout
 import Navigation from './components/layout/Navigation';
 
+// importar la nueva vista
+import ClientesAdmin from './views/ClientesAdmin';
+
 // Componente de protección de rutas
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -97,6 +100,12 @@ const AppContent: React.FC = () => {
           <Route path="/admin/dashboard" element={
             <ProtectedRoute allowedRoles={['administrador', 'ADMIN']}>
               <AdminView />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/admin/clientes" element={
+            <ProtectedRoute allowedRoles={['administrador', 'ADMIN']}>
+              <ClientesAdmin />
             </ProtectedRoute>
           } />
           

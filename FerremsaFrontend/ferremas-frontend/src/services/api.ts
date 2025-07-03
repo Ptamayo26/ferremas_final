@@ -136,15 +136,24 @@ export const api = {
     return response.data;
   },
 
-  // Marcas
-  async getMarcas(): Promise<{ id: number; nombre: string; descripcion?: string; logoUrl?: string }[]> {
-    const response = await publicApiClient.get('/api/Marcas');
-    return response.data;
-  },
+// Marcas
+async getMarcas(): Promise<{ id: number; nombre: string; descripcion?: string; logoUrl?: string }[]> {
+  const response = await publicApiClient.get('/api/Marcas');
+  return response.data;
+}
 
-  // Categorías
-  async getCategorias(): Promise<{ id: number; nombre: string; descripcion?: string; codigo?: string }[]> {
-    const response = await publicApiClient.get('/api/Categorias');
+// Categorías
+async getCategorias(): Promise<{ id: number; nombre: string; descripcion?: string; codigo?: string }[]> {
+  const response = await publicApiClient.get('/api/Categorias');
+  return response.data;
+}
+
+// Facturas
+async getFacturaByPedidoId(pedidoId: number): Promise<any> {
+  const response = await apiClient.get(`/api/facturas/factura/${pedidoId}`);
+  return response.data;
+}
+
     return response.data;
   }
 };

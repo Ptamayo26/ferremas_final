@@ -125,6 +125,13 @@ namespace Ferremas.Api.Controllers
                 return NotFound();
             }
 
+            decimal precioOriginal = producto.Precio;
+            decimal precioConDescuento = producto.Precio;
+            if (producto.Categoria != null && producto.Categoria.DescuentoPorcentaje > 0)
+            {
+                precioConDescuento = Math.Round(producto.Precio * (1 - (producto.Categoria.DescuentoPorcentaje / 100)), 0);
+            }
+
             var response = new ProductoResponseDTO
             {
                 Id = producto.Id,
@@ -141,7 +148,9 @@ namespace Ferremas.Api.Controllers
                 Especificaciones = producto.Especificaciones,
                 FechaCreacion = producto.FechaCreacion,
                 FechaModificacion = producto.FechaModificacion,
-                Activo = producto.Activo
+                Activo = producto.Activo,
+                PrecioOriginal = precioOriginal,
+                PrecioConDescuento = precioConDescuento
             };
 
             return Ok(response);

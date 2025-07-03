@@ -120,24 +120,31 @@ const CatalogoProductos: React.FC = () => {
         const response = await publicApiClient.get<any>('/api/Productos');
         console.log('2. Respuesta recibida del backend:', response);
         
-        const productosData = response.data.productos || response.data.datos || response.data.Datos || response.data.Productos || response.data || [];
+        let productosData: ProductoResponseDTO[] = [];
+        if (Array.isArray(response.data.productos)) {
+          productosData = response.data.productos;
+        } else if (Array.isArray(response.data)) {
+          productosData = response.data;
+        } else {
+          setError('La respuesta del backend no contiene productos.');
+          setProductos([]);
+          setProductosFiltrados([]);
+          return;
+        }
         console.log('3. Datos de productos extraídos:', productosData);
 
-        if (Array.isArray(productosData)) {
-            setProductos(productosData);
-            setProductosFiltrados(productosData);
-            if (productosData.length === 0) {
-              console.warn('4. No hay productos disponibles en la respuesta.');
-            } else {
-              console.log('4. Productos cargados en el estado.');
-            }
+        setProductos(productosData);
+        setProductosFiltrados(productosData);
+        if (productosData.length === 0) {
+          console.warn('4. No hay productos disponibles en la respuesta.');
         } else {
-            throw new Error("La respuesta no contiene un array de productos válido.");
+          console.log('4. Productos cargados en el estado.');
         }
-
       } catch (err: any) {
         console.error('Error en el bloque try-catch:', err);
         setError('No se pudieron cargar los productos. Revisa la consola para más detalles.');
+        setProductos([]);
+        setProductosFiltrados([]);
       } finally {
         console.log('5. Finalizando fetch, setLoading a false.');
         setLoading(false);
