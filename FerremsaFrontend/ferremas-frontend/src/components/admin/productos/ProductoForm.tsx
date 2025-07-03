@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../../services/api';
+import { api, apiClient } from '../../../services/api';
 
 interface ProductoFormProps {
   open: boolean;
@@ -15,6 +15,8 @@ export interface ProductoFormData {
   precio: number;
   stock: number;
   marcaId?: number;
+  descripcion?: string;
+  imagenUrl?: string;
 }
 
 const ProductoForm: React.FC<ProductoFormProps> = ({ open, onClose, onSubmit, initialData }) => {
@@ -30,6 +32,9 @@ const ProductoForm: React.FC<ProductoFormProps> = ({ open, onClose, onSubmit, in
   );
   const [marcas, setMarcas] = useState<{ id: number; nombre: string }[]>([]);
   const [categorias, setCategorias] = useState<{ id: number; nombre: string }[]>([]);
+  const [imagen, setImagen] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imagenUrl || null);
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -46,7 +51,7 @@ const ProductoForm: React.FC<ProductoFormProps> = ({ open, onClose, onSubmit, in
     }
   }, [open]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
@@ -54,9 +59,36 @@ const ProductoForm: React.FC<ProductoFormProps> = ({ open, onClose, onSubmit, in
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setImagen(file || null);
+    if (file) {
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setPreviewUrl(null);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(form);
+    let imagenUrl = initialData?.imagenUrl || '';
+    if (imagen) {
+      setSubiendoImagen(true);
+      const formData = new FormData();
+      formData.append('file', imagen);
+      try {
+        const res = await apiClient.post('/api/upload/producto', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        imagenUrl = res.data.url;
+      } catch (err) {
+        alert('Error al subir la imagen');
+        setSubiendoImagen(false);
+        return;
+      }
+      setSubiendoImagen(false);
+    }
+    onSubmit({ ...form, imagenUrl });
   };
 
   if (!open) return null;
@@ -93,6 +125,17 @@ const ProductoForm: React.FC<ProductoFormProps> = ({ open, onClose, onSubmit, in
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
               required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Descripción / Reseña</label>
+            <textarea
+              name="descripcion"
+              value={form.descripcion || ''}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              rows={3}
+              placeholder="Agrega una reseña o descripción del producto"
             />
           </div>
           <div>
@@ -148,6 +191,18 @@ const ProductoForm: React.FC<ProductoFormProps> = ({ open, onClose, onSubmit, in
               min={0}
               required
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Imagen</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+            {previewUrl && (
+              <img src={previewUrl} alt="Previsualización" className="w-32 h-32 object-contain mt-2" />
+            )}
+            {subiendoImagen && <div className="text-sm text-blue-600 mt-1">Subiendo imagen...</div>}
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <button

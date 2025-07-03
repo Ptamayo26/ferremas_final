@@ -7,6 +7,11 @@ using Ferremas.Api.Models;
 using Ferremas.Api.Data;
 using Ferremas.Api.DTOs;
 using Ferremas.Api.Services.Interfaces;
+using System.Globalization;
+using System.IO;
+using CsvHelper;
+using CsvHelper.Configuration;
+using ClosedXML.Excel;
 
 namespace Ferremas.Api.Controllers
 {
@@ -423,7 +428,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [AllowAnonymous]
-        [HttpGet("publico/whatsapp-link")]
+        [HttpGet("whatsapp-link")]
         public IActionResult GenerarLinkWhatsapp([FromQuery] string telefono, [FromQuery] string producto)
         {
             if (string.IsNullOrWhiteSpace(telefono) || string.IsNullOrWhiteSpace(producto))
@@ -483,6 +488,358 @@ namespace Ferremas.Api.Controllers
             }
             await _context.SaveChangesAsync();
             return Ok(new { mensaje = "Códigos actualizados correctamente" });
+        }
+
+        // Descargar plantilla CSV para carga masiva (todos los campos relevantes)
+        [HttpGet("descargar-plantilla-csv")]
+        [Authorize(Roles = "administrador,bodeguero")]
+        public IActionResult DescargarPlantillaCsv()
+        {
+            var csv = "Nombre;Codigo;Descripcion;Precio;Stock;CategoriaId;MarcaId;ImagenUrl;Especificaciones\n" +
+                      "Taladro Percutor 650W;HE100;Taladro eléctrico de 650W;59990;25;1;1;https://ejemplo.com/taladro.jpg;Potencia:650W\n";
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
+            return File(bytes, "text/csv", "plantilla_productos.csv");
+        }
+
+        // Previsualizar carga masiva de productos desde CSV (todos los campos)
+        [HttpPost("previsualizar-carga-csv")]
+        [Authorize(Roles = "administrador,bodeguero")]
+        public async Task<IActionResult> PrevisualizarCargaCsv([FromForm] IFormFile archivoCsv)
+        {
+            if (archivoCsv == null || archivoCsv.Length == 0)
+                return BadRequest("No se subió ningún archivo");
+
+            var productos = new List<Producto>();
+            var errores = new List<string>();
+            var columnasEsperadas = new[] { "Nombre", "Codigo", "Descripcion", "Precio", "Stock", "CategoriaId", "MarcaId", "ImagenUrl", "Especificaciones" };
+            try
+            {
+                if (archivoCsv.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var stream = archivoCsv.OpenReadStream();
+                    using var workbook = new XLWorkbook(stream);
+                    var ws = workbook.Worksheet(1); // Hoja principal
+                    var headers = ws.Row(1).Cells().Select(c => c.GetString().Trim()).ToArray();
+                    if (headers.Length != columnasEsperadas.Length || !columnasEsperadas.SequenceEqual(headers))
+                    {
+                        return BadRequest($"El archivo Excel debe tener exactamente las columnas: {string.Join(";", columnasEsperadas)} (en ese orden y sin columnas extra).\nEncabezados recibidos: {string.Join(";", headers)}");
+                    }
+                    int row = 2;
+                    while (!ws.Row(row).IsEmpty())
+                    {
+                        var c = ws.Row(row).Cells(1, columnasEsperadas.Length).Select(c => c.GetString()).ToArray();
+                        // Ignorar filas completamente vacías
+                        if (c.All(string.IsNullOrWhiteSpace)) { row++; continue; }
+                        // Validar cantidad de columnas
+                        if (c.Length != columnasEsperadas.Length) { errores.Add($"Fila {row}: Cantidad de columnas incorrecta (esperado: {columnasEsperadas.Length}, encontrado: {c.Length})"); row++; continue; }
+                        string nombre = c[0], codigo = c[1], descripcion = c[2], precioStr = c[3], stockStr = c[4], categoriaIdStr = c[5], marcaIdStr = c[6], imagenUrl = c[7], especificaciones = c[8];
+                        if (string.IsNullOrWhiteSpace(nombre)) { errores.Add($"Fila {row}: El nombre es obligatorio."); row++; continue; }
+                        if (!decimal.TryParse(precioStr, out decimal precio) || precio < 0) { errores.Add($"Fila {row}: Precio inválido."); row++; continue; }
+                        if (!int.TryParse(stockStr, out int stock) || stock < 0) { errores.Add($"Fila {row}: Stock inválido."); row++; continue; }
+                        if (!int.TryParse(categoriaIdStr, out int categoriaId) || categoriaId <= 0) { errores.Add($"Fila {row}: CategoriaId inválido."); row++; continue; }
+                        if (!int.TryParse(marcaIdStr, out int marcaId) || marcaId <= 0) { errores.Add($"Fila {row}: MarcaId inválido."); row++; continue; }
+                        var producto = new Producto
+                        {
+                            Codigo = string.IsNullOrWhiteSpace(codigo) ? "TEMP" : codigo,
+                            Nombre = nombre,
+                            Descripcion = descripcion,
+                            Precio = precio,
+                            Stock = stock,
+                            CategoriaId = categoriaId,
+                            MarcaId = marcaId,
+                            ImagenUrl = string.IsNullOrWhiteSpace(imagenUrl) ? "Sin imagen" : imagenUrl,
+                            Especificaciones = especificaciones,
+                            FechaCreacion = DateTime.UtcNow,
+                            Activo = true
+                        };
+                        productos.Add(producto);
+                        row++;
+                    }
+                }
+                else // CSV
+                {
+                    using var reader = new StreamReader(archivoCsv.OpenReadStream());
+                    using var csv = new CsvHelper.CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture)
+                    {
+                        Delimiter = ";",
+                        HeaderValidated = null,
+                        MissingFieldFound = null
+                    });
+                    csv.Read();
+                    csv.ReadHeader();
+                    var headers = csv.HeaderRecord;
+                    if (headers == null || headers.Length != columnasEsperadas.Length || !columnasEsperadas.SequenceEqual(headers))
+                    {
+                        return BadRequest($"El archivo CSV debe tener exactamente las columnas: {string.Join(";", columnasEsperadas)} (en ese orden y sin columnas extra).\nEncabezados recibidos: {string.Join(";", headers ?? new string[0])}");
+                    }
+                    var registros = csv.GetRecords<dynamic>().ToList();
+                    int fila = 2;
+                    foreach (var reg in registros)
+                    {
+                        string nombre = reg.Nombre;
+                        string codigo = reg.Codigo;
+                        string descripcion = reg.Descripcion;
+                        string precioStr = reg.Precio;
+                        string stockStr = reg.Stock;
+                        string categoriaIdStr = reg.CategoriaId;
+                        string marcaIdStr = reg.MarcaId;
+                        string imagenUrl = reg.ImagenUrl;
+                        string especificaciones = reg.Especificaciones;
+                        if (string.IsNullOrWhiteSpace(nombre)) { errores.Add($"Fila {fila}: El nombre es obligatorio."); fila++; continue; }
+                        if (!decimal.TryParse(precioStr, out decimal precio) || precio < 0) { errores.Add($"Fila {fila}: Precio inválido."); fila++; continue; }
+                        if (!int.TryParse(stockStr, out int stock) || stock < 0) { errores.Add($"Fila {fila}: Stock inválido."); fila++; continue; }
+                        if (!int.TryParse(categoriaIdStr, out int categoriaId) || categoriaId <= 0) { errores.Add($"Fila {fila}: CategoriaId inválido."); fila++; continue; }
+                        if (!int.TryParse(marcaIdStr, out int marcaId) || marcaId <= 0) { errores.Add($"Fila {fila}: MarcaId inválido."); fila++; continue; }
+                        var producto = new Producto
+                        {
+                            Codigo = string.IsNullOrWhiteSpace(codigo) ? "TEMP" : codigo,
+                            Nombre = nombre,
+                            Descripcion = descripcion,
+                            Precio = precio,
+                            Stock = stock,
+                            CategoriaId = categoriaId,
+                            MarcaId = marcaId,
+                            ImagenUrl = string.IsNullOrWhiteSpace(imagenUrl) ? "Sin imagen" : imagenUrl,
+                            Especificaciones = especificaciones,
+                            FechaCreacion = DateTime.UtcNow,
+                            Activo = true
+                        };
+                        productos.Add(producto);
+                        fila++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al leer el archivo: {ex.Message}");
+            }
+            if (errores.Count > 0)
+                return BadRequest(new { errores });
+            var preview = productos.Select(p => new {
+                p.Nombre,
+                p.Codigo,
+                p.Descripcion,
+                p.Precio,
+                p.Stock,
+                p.CategoriaId,
+                p.MarcaId,
+                p.ImagenUrl,
+                p.Especificaciones
+            }).ToList();
+            return Ok(new { productos = preview });
+        }
+
+        // Guardar productos desde carga masiva CSV (todos los campos)
+        [HttpPost("guardar-carga-csv")]
+        [Authorize(Roles = "administrador,bodeguero")]
+        public async Task<IActionResult> GuardarCargaCsv([FromForm] IFormFile archivoCsv)
+        {
+            if (archivoCsv == null || archivoCsv.Length == 0)
+                return BadRequest("No se subió ningún archivo");
+
+            var productos = new List<Producto>();
+            var errores = new List<string>();
+            var columnasEsperadas = new[] { "Nombre", "Codigo", "Descripcion", "Precio", "Stock", "CategoriaId", "MarcaId", "ImagenUrl", "Especificaciones" };
+            try
+            {
+                if (archivoCsv.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var stream = archivoCsv.OpenReadStream();
+                    using var workbook = new XLWorkbook(stream);
+                    var ws = workbook.Worksheet(1); // Hoja principal
+                    var headers = ws.Row(1).Cells().Select(c => c.GetString().Trim()).ToArray();
+                    if (headers.Length != columnasEsperadas.Length || !columnasEsperadas.SequenceEqual(headers))
+                    {
+                        return BadRequest($"El archivo Excel debe tener exactamente las columnas: {string.Join(";", columnasEsperadas)} (en ese orden y sin columnas extra).\nEncabezados recibidos: {string.Join(";", headers)}");
+                    }
+                    int row = 2;
+                    while (!ws.Row(row).IsEmpty())
+                    {
+                        var c = ws.Row(row).Cells(1, columnasEsperadas.Length).Select(c => c.GetString()).ToArray();
+                        // Ignorar filas completamente vacías
+                        if (c.All(string.IsNullOrWhiteSpace)) { row++; continue; }
+                        // Validar cantidad de columnas
+                        if (c.Length != columnasEsperadas.Length) { errores.Add($"Fila {row}: Cantidad de columnas incorrecta (esperado: {columnasEsperadas.Length}, encontrado: {c.Length})"); row++; continue; }
+                        string nombre = c[0], codigo = c[1], descripcion = c[2], precioStr = c[3], stockStr = c[4], categoriaIdStr = c[5], marcaIdStr = c[6], imagenUrl = c[7], especificaciones = c[8];
+                        if (string.IsNullOrWhiteSpace(nombre)) { errores.Add($"Fila {row}: El nombre es obligatorio."); row++; continue; }
+                        if (!decimal.TryParse(precioStr, out decimal precio) || precio < 0) { errores.Add($"Fila {row}: Precio inválido."); row++; continue; }
+                        if (!int.TryParse(stockStr, out int stock) || stock < 0) { errores.Add($"Fila {row}: Stock inválido."); row++; continue; }
+                        if (!int.TryParse(categoriaIdStr, out int categoriaId) || categoriaId <= 0) { errores.Add($"Fila {row}: CategoriaId inválido."); row++; continue; }
+                        if (!int.TryParse(marcaIdStr, out int marcaId) || marcaId <= 0) { errores.Add($"Fila {row}: MarcaId inválido."); row++; continue; }
+                        var producto = new Producto
+                        {
+                            Codigo = string.IsNullOrWhiteSpace(codigo) ? "TEMP" : codigo,
+                            Nombre = nombre,
+                            Descripcion = descripcion,
+                            Precio = precio,
+                            Stock = stock,
+                            CategoriaId = categoriaId,
+                            MarcaId = marcaId,
+                            ImagenUrl = string.IsNullOrWhiteSpace(imagenUrl) ? "Sin imagen" : imagenUrl,
+                            Especificaciones = especificaciones,
+                            FechaCreacion = DateTime.UtcNow,
+                            Activo = true
+                        };
+                        productos.Add(producto);
+                        row++;
+                    }
+                }
+                else // CSV
+                {
+                    using var reader = new StreamReader(archivoCsv.OpenReadStream());
+                    using var csv = new CsvHelper.CsvReader(reader, new CsvHelper.Configuration.CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture)
+                    {
+                        Delimiter = ";",
+                        HeaderValidated = null,
+                        MissingFieldFound = null
+                    });
+                    csv.Read();
+                    csv.ReadHeader();
+                    var headers = csv.HeaderRecord;
+                    if (headers == null || headers.Length != columnasEsperadas.Length || !columnasEsperadas.SequenceEqual(headers))
+                    {
+                        return BadRequest($"El archivo CSV debe tener exactamente las columnas: {string.Join(";", columnasEsperadas)} (en ese orden y sin columnas extra).\nEncabezados recibidos: {string.Join(";", headers ?? new string[0])}");
+                    }
+                    var registros = csv.GetRecords<dynamic>().ToList();
+                    int fila = 2;
+                    foreach (var reg in registros)
+                    {
+                        string nombre = reg.Nombre;
+                        string codigo = reg.Codigo;
+                        string descripcion = reg.Descripcion;
+                        string precioStr = reg.Precio;
+                        string stockStr = reg.Stock;
+                        string categoriaIdStr = reg.CategoriaId;
+                        string marcaIdStr = reg.MarcaId;
+                        string imagenUrl = reg.ImagenUrl;
+                        string especificaciones = reg.Especificaciones;
+                        if (string.IsNullOrWhiteSpace(nombre)) { errores.Add($"Fila {fila}: El nombre es obligatorio."); fila++; continue; }
+                        if (!decimal.TryParse(precioStr, out decimal precio) || precio < 0) { errores.Add($"Fila {fila}: Precio inválido."); fila++; continue; }
+                        if (!int.TryParse(stockStr, out int stock) || stock < 0) { errores.Add($"Fila {fila}: Stock inválido."); fila++; continue; }
+                        if (!int.TryParse(categoriaIdStr, out int categoriaId) || categoriaId <= 0) { errores.Add($"Fila {fila}: CategoriaId inválido."); fila++; continue; }
+                        if (!int.TryParse(marcaIdStr, out int marcaId) || marcaId <= 0) { errores.Add($"Fila {fila}: MarcaId inválido."); fila++; continue; }
+                        var producto = new Producto
+                        {
+                            Codigo = string.IsNullOrWhiteSpace(codigo) ? "TEMP" : codigo,
+                            Nombre = nombre,
+                            Descripcion = descripcion,
+                            Precio = precio,
+                            Stock = stock,
+                            CategoriaId = categoriaId,
+                            MarcaId = marcaId,
+                            ImagenUrl = string.IsNullOrWhiteSpace(imagenUrl) ? "Sin imagen" : imagenUrl,
+                            Especificaciones = especificaciones,
+                            FechaCreacion = DateTime.UtcNow,
+                            Activo = true
+                        };
+                        productos.Add(producto);
+                        fila++;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error al leer el archivo: {ex.Message}");
+            }
+            if (errores.Count > 0)
+                return BadRequest(new { errores });
+            // Guardar productos en la base de datos
+            foreach (var producto in productos)
+            {
+                _context.Productos.Add(producto);
+            }
+            await _context.SaveChangesAsync();
+            // Actualizar códigos automáticos si no se proporcionó uno
+            foreach (var producto in productos)
+            {
+                if (producto.Codigo == "TEMP" || string.IsNullOrWhiteSpace(producto.Codigo))
+                {
+                    producto.Codigo = $"M{producto.MarcaId?.ToString("D2") ?? "00"}-C{producto.CategoriaId?.ToString("D2") ?? "00"}-{producto.Id.ToString("D5")}";
+                }
+            }
+            await _context.SaveChangesAsync();
+            var productosGuardados = productos.Select(p => new {
+                p.Id,
+                p.Codigo,
+                p.Nombre,
+                p.Precio,
+                p.Stock,
+                p.CategoriaId,
+                p.MarcaId,
+                p.ImagenUrl
+            }).ToList();
+            return Ok(new { mensaje = "Productos guardados exitosamente", productos = productosGuardados });
+        }
+
+        // Descargar plantilla Excel con listas desplegables para carga masiva
+        [HttpGet("descargar-plantilla-excel")]
+        [Authorize(Roles = "administrador,bodeguero")]
+        public async Task<IActionResult> DescargarPlantillaExcel()
+        {
+            // Obtener categorías y marcas activas
+            var categorias = await _context.Categorias.Where(c => c.Activo).Select(c => new { c.Id, c.Nombre }).ToListAsync();
+            var marcas = await _context.Marcas.Where(m => m.Activo).Select(m => new { m.Id, m.Nombre }).ToListAsync();
+
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("Productos");
+            var wsCat = workbook.Worksheets.Add("Categorias");
+            var wsMar = workbook.Worksheets.Add("Marcas");
+
+            // Encabezados
+            var headers = new[] { "Nombre", "Codigo", "Descripcion", "Precio", "Stock", "CategoriaId", "MarcaId", "ImagenUrl", "Especificaciones" };
+            for (int i = 0; i < headers.Length; i++)
+                ws.Cell(1, i + 1).Value = headers[i];
+
+            // Fila de ejemplo
+            ws.Cell(2, 1).Value = "Taladro Percutor 650W";
+            ws.Cell(2, 2).Value = "HE100";
+            ws.Cell(2, 3).Value = "Taladro eléctrico de 650W";
+            ws.Cell(2, 4).Value = 59990;
+            ws.Cell(2, 5).Value = 25;
+            ws.Cell(2, 6).Value = categorias.FirstOrDefault()?.Id ?? 1;
+            ws.Cell(2, 7).Value = marcas.FirstOrDefault()?.Id ?? 1;
+            ws.Cell(2, 8).Value = "https://ejemplo.com/taladro.jpg";
+            ws.Cell(2, 9).Value = "Potencia:650W";
+
+            // Hoja de categorías
+            wsCat.Cell(1, 1).Value = "Id";
+            wsCat.Cell(1, 2).Value = "Nombre";
+            for (int i = 0; i < categorias.Count; i++)
+            {
+                wsCat.Cell(i + 2, 1).Value = categorias[i].Id;
+                wsCat.Cell(i + 2, 2).Value = categorias[i].Nombre;
+            }
+
+            // Hoja de marcas
+            wsMar.Cell(1, 1).Value = "Id";
+            wsMar.Cell(1, 2).Value = "Nombre";
+            for (int i = 0; i < marcas.Count; i++)
+            {
+                wsMar.Cell(i + 2, 1).Value = marcas[i].Id;
+                wsMar.Cell(i + 2, 2).Value = marcas[i].Nombre;
+            }
+
+            // Definir nombres de rango para validación
+            var catRange = wsCat.Range(2, 1, categorias.Count + 1, 1);
+            var marRange = wsMar.Range(2, 1, marcas.Count + 1, 1);
+            catRange.AddToNamed("CategoriasIds", XLScope.Workbook);
+            marRange.AddToNamed("MarcasIds", XLScope.Workbook);
+
+            // Validación de datos (listas desplegables)
+            var catValidation = ws.Range("F2:F1000").CreateDataValidation();
+            catValidation.List("=CategoriasIds");
+            var marValidation = ws.Range("G2:G1000").CreateDataValidation();
+            marValidation.List("=MarcasIds");
+
+            // Ajustar ancho de columnas
+            ws.Columns().AdjustToContents();
+            wsCat.Columns().AdjustToContents();
+            wsMar.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Seek(0, SeekOrigin.Begin);
+            return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "plantilla_productos.xlsx");
         }
     }
 }

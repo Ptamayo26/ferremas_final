@@ -130,17 +130,12 @@ builder.Services.AddScoped<ChileGeoService>();
 // Add CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader());
-               
-    // CORS específico para API pública
-    options.AddPolicy("ApiPublica", policy =>
-        policy.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .WithExposedHeaders("X-RateLimit-Remaining", "X-RateLimit-Reset"));
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
+    // Puedes mantener otras políticas si las necesitas
 });
 
 // Add Swagger con configuración SOLO para controladores
@@ -292,7 +287,7 @@ else
 
 // Middleware pipeline en orden correcto
 app.UseMiddleware<ExceptionMiddleware>();
-app.UseCors("AllowAll");
+app.UseCors("AllowFrontend");
 
 // Configurar archivos estáticos
 app.UseStaticFiles();

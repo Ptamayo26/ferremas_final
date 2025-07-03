@@ -97,78 +97,106 @@ const ClientesAdmin: React.FC = () => {
   }
 
   return (
-    <div className="card p-6 max-w-6xl mx-auto mt-8">
-      <h2 className="text-2xl font-bold text-ferremas-primary mb-6">Gestión de Clientes</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-ferremas-gray-200">
-          <thead className="bg-ferremas-gray-50">
-            <tr>
-              <th className="th-cell">Nombre</th>
-              <th className="th-cell">Correo</th>
-              <th className="th-cell">RUT</th>
-              <th className="th-cell">Teléfono</th>
-              <th className="th-cell">Estado</th>
-              <th className="th-cell">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-ferremas-gray-200">
-            {clientes.map((cliente) => (
-              <tr key={cliente.id} className="hover:bg-ferremas-gray-50">
-                <td className="td-cell">{cliente.nombre} {cliente.apellido}</td>
-                <td className="td-cell">{cliente.correoElectronico}</td>
-                <td className="td-cell">{cliente.rut}</td>
-                <td className="td-cell">{cliente.telefono || '-'}</td>
-                <td className="td-cell">
-                  <span className={`badge-${cliente.activo ? 'success' : 'danger'}`}>{cliente.activo ? 'Activo' : 'Inactivo'}</span>
-                </td>
-                <td className="td-cell">
-                  <div className="flex space-x-2">
-                    <button onClick={() => handleView(cliente)} className="text-ferremas-primary hover:underline">👁️</button>
-                    <button onClick={() => handleEdit(cliente)} className="text-ferremas-blue-600 hover:text-ferremas-blue-800">✏️</button>
-                    <button onClick={() => handleDelete(cliente.id)} className="text-ferremas-danger hover:text-red-700">🗑️</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="max-w-6xl mx-auto mt-8">
+      <div className="mb-6 flex gap-4">
+        <button
+          className="px-4 py-2 rounded bg-white border text-gray-700"
+          onClick={() => window.location.href = '/admin/dashboard'}
+        >
+          Dashboard
+        </button>
+        <button
+          className="px-4 py-2 rounded bg-white border text-gray-700"
+          onClick={() => window.location.href = '/admin/users'}
+        >
+          Usuarios
+        </button>
+        <button
+          className="px-4 py-2 rounded bg-blue-600 text-white"
+          onClick={() => window.location.href = '/admin/catalogo'}
+        >
+          Catálogo de Productos
+        </button>
+        <button
+          className="px-4 py-2 rounded bg-ferremas-success text-white"
+          disabled
+        >
+          Ver Clientes
+        </button>
       </div>
-
-      {/* Modal de edición */}
-      {editCliente && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-xl font-bold mb-4 text-ferremas-primary">Editar Cliente</h3>
-            {editError && <div className="mb-2 text-red-600">{editError}</div>}
-            <form onSubmit={handleEditSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Nombre</label>
-                <input type="text" name="nombre" value={editForm.nombre} onChange={handleEditChange} required className="w-full border rounded px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Apellido</label>
-                <input type="text" name="apellido" value={editForm.apellido} onChange={handleEditChange} required className="w-full border rounded px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">RUT</label>
-                <input type="text" name="rut" value={editForm.rut} onChange={handleEditChange} required className="w-full border rounded px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Correo electrónico</label>
-                <input type="email" name="correoElectronico" value={editForm.correoElectronico} onChange={handleEditChange} required className="w-full border rounded px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Teléfono</label>
-                <input type="text" name="telefono" value={editForm.telefono} onChange={handleEditChange} className="w-full border rounded px-3 py-2" />
-              </div>
-              <div className="flex justify-end space-x-2 mt-4">
-                <button type="button" onClick={handleEditCancel} className="btn-secondary">Cancelar</button>
-                <button type="submit" className="btn-primary" disabled={editLoading}>{editLoading ? 'Guardando...' : 'Guardar'}</button>
-              </div>
-            </form>
-          </div>
+      <div className="card p-6">
+        <h2 className="text-2xl font-bold text-ferremas-primary mb-6">Gestión de Clientes</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-ferremas-gray-200">
+            <thead className="bg-ferremas-gray-50">
+              <tr>
+                <th className="th-cell">Nombre</th>
+                <th className="th-cell">Correo</th>
+                <th className="th-cell">RUT</th>
+                <th className="th-cell">Teléfono</th>
+                <th className="th-cell">Estado</th>
+                <th className="th-cell">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-ferremas-gray-200">
+              {clientes.map((cliente) => (
+                <tr key={cliente.id} className="hover:bg-ferremas-gray-50">
+                  <td className="td-cell">{cliente.nombre} {cliente.apellido}</td>
+                  <td className="td-cell">{cliente.correoElectronico}</td>
+                  <td className="td-cell">{cliente.rut}</td>
+                  <td className="td-cell">{cliente.telefono || '-'}</td>
+                  <td className="td-cell">
+                    <span className={`badge-${cliente.activo ? 'success' : 'danger'}`}>{cliente.activo ? 'Activo' : 'Inactivo'}</span>
+                  </td>
+                  <td className="td-cell">
+                    <div className="flex space-x-2">
+                      <button onClick={() => handleView(cliente)} className="text-ferremas-primary hover:underline">👁️</button>
+                      <button onClick={() => handleEdit(cliente)} className="text-ferremas-blue-600 hover:text-ferremas-blue-800">✏️</button>
+                      <button onClick={() => handleDelete(cliente.id)} className="text-ferremas-danger hover:text-red-700">🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {/* Modal de edición */}
+        {editCliente && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-xl font-bold mb-4 text-ferremas-primary">Editar Cliente</h3>
+              {editError && <div className="mb-2 text-red-600">{editError}</div>}
+              <form onSubmit={handleEditSave} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nombre</label>
+                  <input type="text" name="nombre" value={editForm.nombre} onChange={handleEditChange} required className="w-full border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Apellido</label>
+                  <input type="text" name="apellido" value={editForm.apellido} onChange={handleEditChange} required className="w-full border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">RUT</label>
+                  <input type="text" name="rut" value={editForm.rut} onChange={handleEditChange} required className="w-full border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Correo electrónico</label>
+                  <input type="email" name="correoElectronico" value={editForm.correoElectronico} onChange={handleEditChange} required className="w-full border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Teléfono</label>
+                  <input type="text" name="telefono" value={editForm.telefono} onChange={handleEditChange} className="w-full border rounded px-3 py-2" />
+                </div>
+                <div className="flex justify-end space-x-2 mt-4">
+                  <button type="button" onClick={handleEditCancel} className="btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn-primary" disabled={editLoading}>{editLoading ? 'Guardando...' : 'Guardar'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

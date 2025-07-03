@@ -209,20 +209,7 @@ const ClienteView: React.FC = () => {
             )}
             {/* BOTONES SOLO PARA ADMINISTRADOR */}
             {user?.rol && (user.rol.toLowerCase() === 'administrador' || user.rol.toUpperCase() === 'ADMIN') && (
-              <>
-                <button
-                  onClick={() => navigate('/admin/clientes')}
-                  className="bg-ferremas-success text-white px-4 py-2 rounded hover:bg-ferremas-success-dark transition"
-                >
-                  Ver Clientes
-                </button>
-                <button
-                  onClick={() => navigate('/admin/segmentacion')}
-                  className="bg-ferremas-warning text-white px-4 py-2 rounded hover:bg-ferremas-warning-dark transition"
-                >
-                  Búsqueda y Segmentación
-                </button>
-              </>
+              <></>
             )}
           </div>
         </div>
@@ -437,78 +424,6 @@ const ClienteView: React.FC = () => {
           )}
         </div>
       </section>
-
-      {/* Catálogo de Productos (ADMIN) */}
-      {user?.rol?.toLowerCase() === 'administrador' || user?.rol?.toUpperCase() === 'ADMIN' ? (
-        <section className="card">
-          <h2 className="text-xl font-semibold text-ferremas-primary mb-4">
-            Administración de Productos
-          </h2>
-          <div className="mb-4 flex justify-end">
-            <button
-              className="bg-ferremas-primary text-white font-semibold px-4 py-2 rounded shadow hover:bg-ferremas-primary-dark transition"
-              onClick={() => {/* TODO: Abrir modal para agregar producto */}}
-            >
-              + Agregar Producto
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-ferremas-gray-50">
-                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Código</th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Producto</th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Descripción</th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Precio</th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Stock</th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Acción</th>
-                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Admin</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productosCatalogo && productosCatalogo.length > 0 ? (
-                  productosCatalogo.map((producto) => (
-                    <tr key={producto.id} className="border-b border-ferremas-gray-100">
-                      <td className="px-4 py-3">{producto.codigo}</td>
-                      <td className="px-4 py-3">{producto.nombre}</td>
-                      <td className="px-4 py-3">{producto.descripcion}</td>
-                      <td className="px-4 py-3">${producto.precio?.toLocaleString() || '0'}</td>
-                      <td className="px-4 py-3">{producto.stock}</td>
-                      <td className="px-4 py-3">
-                        <button className="btn-primary btn-xs" onClick={() => alert(`Agregar ${producto.nombre} al carrito`)}>
-                          Agregar al Carrito
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 flex gap-2">
-                        <button
-                          className="text-blue-600 hover:underline"
-                          title="Editar"
-                          onClick={() => {/* TODO: Abrir modal para editar producto */}}
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          className="text-red-600 hover:underline"
-                          title="Eliminar"
-                          onClick={() => eliminarProducto(producto.id)}
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-ferremas-gray-500">
-                      No hay productos en el catálogo
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
 
       {/* Acciones Rápidas */}
       <section className="card">

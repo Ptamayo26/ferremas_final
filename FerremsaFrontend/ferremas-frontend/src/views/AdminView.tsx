@@ -216,54 +216,6 @@ const AdminView: React.FC = () => {
                 </table>
               </div>
             </section>
-
-            {/* Inventario Completo */}
-            <section className="card">
-              <h2 className="text-xl font-semibold text-ferremas-primary mb-4">
-                Inventario Completo
-              </h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead>
-                    <tr className="bg-ferremas-gray-50">
-                      <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Código</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Producto</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Descripción</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Precio</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Stock</th>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productosInventario && productosInventario.length > 0 ? (
-                      productosInventario.map((producto) => (
-                        <tr key={producto.id} className="border-b border-ferremas-gray-100">
-                          <td className="px-4 py-3">{producto.codigo}</td>
-                          <td className="px-4 py-3">{producto.nombre}</td>
-                          <td className="px-4 py-3">{producto.descripcion}</td>
-                          <td className="px-4 py-3">${producto.precio?.toLocaleString() || '0'}</td>
-                          <td className="px-4 py-3">{producto.stock}</td>
-                          <td className="px-4 py-3 space-x-2">
-                            <button className="btn-primary btn-xs" onClick={() => alert(`Editar ${producto.nombre}`)}>
-                              Editar
-                            </button>
-                            <button className="btn-danger btn-xs" onClick={() => alert(`Eliminar ${producto.nombre}`)}>
-                              Eliminar
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-ferremas-gray-500">
-                          No hay productos en inventario
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
           </>
         );
     }
@@ -298,6 +250,12 @@ const AdminView: React.FC = () => {
           onClick={() => setActiveSection('catalogo')}
         >
           Catálogo de Productos
+        </button>
+        <button
+          className="bg-ferremas-success text-white px-4 py-2 rounded hover:bg-ferremas-success-dark transition"
+          onClick={() => window.location.href = '/admin/clientes'}
+        >
+          Ver Clientes
         </button>
       </div>
       {renderContent()}

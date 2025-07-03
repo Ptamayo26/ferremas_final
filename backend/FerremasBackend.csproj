@@ -25,6 +25,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="8.1.2" />
     <PackageReference Include="TransbankSDK" Version="7.2.0" />
+    <PackageReference Include="CsvHelper" Version="30.0.1" />
+    <PackageReference Include="ClosedXML" Version="0.102.2" />
   </ItemGroup>
 
   <!-- Archivos de Configuración y Documentación - sin cambios -->
