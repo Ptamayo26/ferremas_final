@@ -12,10 +12,13 @@ password: string;
 
 export interface UsuarioCreateDTO {
 nombre: string;
+apellido?: string;
 email: string;
 password: string;
-rol?: string;
+rut?: string;
 telefono?: string;
+rol?: string;
+direccion?: DireccionCreateDTO;
 }
 
 export interface ResetPasswordDTO {
@@ -122,6 +125,39 @@ export interface DireccionDTO {
   codigoPostal: string;
   esPrincipal: boolean;
   fechaModificacion?: Date;
+}
+
+export interface DireccionCreateDTO {
+  calle: string;
+  numero: string;
+  departamento: string;
+  comuna: string;
+  region: string;
+  codigoPostal: string;
+}
+
+// ========================================
+// TIPOS DE GEOGRAFÍA DE CHILE
+// ========================================
+
+export interface RegionChile {
+  codigo: string;
+  nombre: string;
+  nombreOficial: string;
+}
+
+export interface ComunaChile {
+  codigo: string;
+  nombre: string;
+  codigoRegion: string;
+  nombreRegion: string;
+}
+
+export interface ChileGeoResponse {
+  exito: boolean;
+  mensaje: string;
+  data: RegionChile[] | ComunaChile[];
+  error?: string;
 }
 
 export interface ClienteResponseDTO {

@@ -101,7 +101,7 @@ namespace Ferremas.Api.Controllers
                         Comuna = direccionEnvio.Comuna,
                         Region = direccionEnvio.Region,
                         CodigoPostal = direccionEnvio.CodigoPostal,
-                        EsPrincipal = direccionEnvio.EsPrincipal ?? false,
+                        EsPrincipal = direccionEnvio.EsPrincipal,
                         FechaModificacion = direccionEnvio.FechaModificacion
                     } : new DireccionDTO()
                 });

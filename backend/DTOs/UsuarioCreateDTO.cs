@@ -1,6 +1,7 @@
 // UsuarioCreateDTO.cs
 using System;
 using System.ComponentModel.DataAnnotations;
+using Ferremas.Api.DTOs;
 
 namespace Ferremas.Api.DTOs
 {
@@ -24,5 +25,8 @@ namespace Ferremas.Api.DTOs
         public string? Rol { get; set; }
 
         public DateTime? FechaRegistro { get; set; }
+
+        // Dirección del cliente
+        public DireccionCreateDTO? Direccion { get; set; }
     }
 }

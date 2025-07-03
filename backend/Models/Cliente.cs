@@ -32,7 +32,7 @@ namespace Ferremas.Api.Models
         public DateTime? FechaModificacion { get; set; }
 
         [Column("activo")]
-        public bool? Activo { get; set; }
+        public bool Activo { get; set; } = true;
 
         [Column("usuario_id")]
         public int? UsuarioId { get; set; }

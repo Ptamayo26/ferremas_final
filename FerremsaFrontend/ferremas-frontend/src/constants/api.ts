@@ -136,6 +136,18 @@ UPDATE_STATUS: (envioId: number) => `/api/Envios/${envioId}/estado`,
 } as const;
 
 // ========================================
+// ENDPOINTS DE GEOGRAFÍA DE CHILE
+// ========================================
+
+export const CHILE_GEO_ENDPOINTS = {
+GET_REGIONES: '/api/ChileGeo/regiones',
+GET_COMUNAS_BY_REGION: (codigoRegion: string) => `/api/ChileGeo/regiones/${codigoRegion}/comunas`,
+GET_TODAS_COMUNAS: '/api/ChileGeo/comunas',
+BUSCAR_COMUNAS: '/api/ChileGeo/comunas/buscar',
+INFO: '/api/ChileGeo/info',
+} as const;
+
+// ========================================
 // ENDPOINTS DE REPORTES
 // ========================================
 

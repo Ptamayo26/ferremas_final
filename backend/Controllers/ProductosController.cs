@@ -23,12 +23,48 @@ namespace Ferremas.Api.Controllers
             _productosService = productosService;
         }
 
+        // Endpoint de prueba simple
+        [HttpGet("test")]
+        [AllowAnonymous]
+        public IActionResult Test()
+        {
+            try
+            {
+                return Ok(new { 
+                    mensaje = "Endpoint de productos funcionando correctamente",
+                    timestamp = DateTime.UtcNow,
+                    context = _context != null ? "DbContext disponible" : "DbContext nulo",
+                    service = _productosService != null ? "ProductosService disponible" : "ProductosService nulo"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { 
+                    error = "Error en endpoint de prueba",
+                    detalles = ex.Message,
+                    stackTrace = ex.StackTrace
+                });
+            }
+        }
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<ProductoResponseDTO>>> GetProductos()
         {
             try
             {
+                // Primero verificar si hay productos en la base de datos
+                var totalProductos = await _context.Productos.CountAsync();
+                Console.WriteLine($"Total de productos en BD: {totalProductos}");
+
+                // Verificar si hay categorías
+                var totalCategorias = await _context.Categorias.CountAsync();
+                Console.WriteLine($"Total de categorías en BD: {totalCategorias}");
+
+                // Verificar si hay marcas
+                var totalMarcas = await _context.Marcas.CountAsync();
+                Console.WriteLine($"Total de marcas en BD: {totalMarcas}");
+
                 var productos = await _context.Productos
                     .Include(p => p.Categoria)
                     .Include(p => p.Marca)
@@ -37,7 +73,7 @@ namespace Ferremas.Api.Controllers
                         Id = p.Id,
                         Codigo = p.Codigo,
                         Nombre = p.Nombre,
-                        Descripcion = p.Descripcion,
+                        Descripcion = p.Descripcion ?? "",
                         Precio = p.Precio,
                         Stock = p.Stock,
                         CategoriaId = p.CategoriaId ?? 0,
@@ -55,6 +91,8 @@ namespace Ferremas.Api.Controllers
                             : p.Precio
                     })
                     .ToListAsync();
+
+                Console.WriteLine($"Productos procesados exitosamente: {productos.Count}");
 
                 return Ok(new {
                     descripcion = "Lista de productos activos en el sistema",

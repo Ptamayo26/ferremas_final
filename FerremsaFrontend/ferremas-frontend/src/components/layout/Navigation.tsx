@@ -113,12 +113,20 @@ const Navigation: React.FC = () => {
               </>
             )}
             {!isAuthenticated && (
-              <Link 
-                to="/login" 
-                className="btn-primary text-sm px-3 py-1 h-8"
-              >
-                Iniciar Sesión
-              </Link>
+              <>
+                <Link 
+                  to="/register" 
+                  className="text-ferremas-secondary hover:text-ferremas-accent text-sm font-medium transition-colors"
+                >
+                  Registrarse
+                </Link>
+                <Link 
+                  to="/login" 
+                  className="btn-primary text-sm px-3 py-1 h-8"
+                >
+                  Iniciar Sesión
+                </Link>
+              </>
             )}
             <CarritoButton onClick={() => navigate('/carrito')} />
           </div>
