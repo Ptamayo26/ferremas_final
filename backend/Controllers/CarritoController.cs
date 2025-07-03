@@ -56,6 +56,8 @@ namespace Ferremas.Api.Controllers
                     })
                     .ToListAsync();
 
+                Console.WriteLine($"[DEBUG] GetCarrito usuarioId: {usuarioId}, items encontrados: {carritoItems.Count}");
+
                 return Ok(carritoItems);
             }
             catch (Exception ex)
@@ -70,6 +72,7 @@ namespace Ferremas.Api.Controllers
             try
             {
                 var usuarioId = GetUsuarioIdFromToken();
+                Console.WriteLine($"[DEBUG] AgregarAlCarrito usuarioId: {usuarioId}");
                 if (usuarioId == null)
                     return Unauthorized("Usuario no autenticado");
 
@@ -114,6 +117,8 @@ namespace Ferremas.Api.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                Console.WriteLine($"[DEBUG] Carrito guardado para usuario {usuarioId}. Total items: " +
+                    $"{_context.Carrito.Count(c => c.UsuarioId == usuarioId && c.Activo)}");
 
                 // Retornar el item actualizado o recién creado
                 var itemActualizado = await _context.Carrito
@@ -299,6 +304,7 @@ namespace Ferremas.Api.Controllers
         private int? GetUsuarioIdFromToken()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Console.WriteLine($"[DEBUG] userIdClaim: {userIdClaim}");
             if (int.TryParse(userIdClaim, out int userId))
                 return userId;
             return null;

@@ -103,12 +103,19 @@ namespace Ferremas.Api.Controllers
                         Mensaje = "Usuario no autenticado o token inválido" 
                     });
                 }
+
+                // Buscar el cliente asociado a este usuario
+                var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.UsuarioId == userId && c.Activo == true);
+                if (cliente == null)
+                {
+                    return Ok(new { exito = true, mensaje = "Sin pedidos", total = 0, datos = new List<PedidoResponseDTO>() });
+                }
                 
                 var pedidos = await _context.Pedidos
                     .Include(p => p.Usuario)
                     .Include(p => p.Detalles)
                         .ThenInclude(d => d.Producto)
-                    .Where(p => p.UsuarioId == userId && p.Activo == true)
+                    .Where(p => p.UsuarioId == cliente.Id && p.Activo == true)
                     .Select(p => new PedidoResponseDTO
                     {
                         Id = p.Id,

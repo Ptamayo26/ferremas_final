@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '../services/api';
+import { apiClient, api } from '../services/api';
 import type { PedidoResponseDTO, ProductoResponseDTO } from '../types/api';
 import { useAuth } from '../context/AuthContext';
 import ClienteInfoCard from '../components/ui/ClienteInfoCard';
@@ -109,6 +109,19 @@ const ClienteView: React.FC = () => {
           });
         }
 
+        // NUEVO: Cargar productos del catálogo para administración
+        try {
+          const productosResponse = await apiClient.get<any>('/api/Productos');
+          const productosData = Array.isArray(productosResponse.data.productos)
+            ? productosResponse.data.productos
+            : Array.isArray(productosResponse.data)
+            ? productosResponse.data
+            : [];
+          setProductosCatalogo(productosData);
+        } catch (e) {
+          setProductosCatalogo([]);
+        }
+
       } catch (error) {
         console.error('Error general al cargar datos:', error);
         setError('Error al cargar los datos del dashboard');
@@ -119,6 +132,23 @@ const ClienteView: React.FC = () => {
 
     cargarDatos();
   }, []);
+
+  // Función para ver detalles del pedido
+  const verFactura = (pedido: any) => {
+    alert(`Detalles del pedido #${pedido.id}\nEstado: ${pedido.estado}\nTotal: $${pedido.total?.toLocaleString()}`);
+  };
+
+  // Función para eliminar producto
+  const eliminarProducto = async (id: number) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.')) return;
+    try {
+      await apiClient.delete(`/api/Productos/${id}`);
+      setProductosCatalogo(productosCatalogo.filter(p => p.id !== id));
+      alert('Producto eliminado exitosamente');
+    } catch (e) {
+      alert('Error al eliminar el producto');
+    }
+  };
 
   if (loading) {
     return (
@@ -176,6 +206,23 @@ const ClienteView: React.FC = () => {
               >
                 Mi Dashboard
               </button>
+            )}
+            {/* BOTONES SOLO PARA ADMINISTRADOR */}
+            {user?.rol && (user.rol.toLowerCase() === 'administrador' || user.rol.toUpperCase() === 'ADMIN') && (
+              <>
+                <button
+                  onClick={() => navigate('/admin/clientes')}
+                  className="bg-ferremas-success text-white px-4 py-2 rounded hover:bg-ferremas-success-dark transition"
+                >
+                  Ver Clientes
+                </button>
+                <button
+                  onClick={() => navigate('/admin/segmentacion')}
+                  className="bg-ferremas-warning text-white px-4 py-2 rounded hover:bg-ferremas-warning-dark transition"
+                >
+                  Búsqueda y Segmentación
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -308,7 +355,10 @@ const ClienteView: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button className="text-ferremas-primary hover:text-ferremas-primary-dark text-sm">
+                      <button
+                        className="text-ferremas-primary hover:text-ferremas-primary-dark text-sm"
+                        onClick={() => verFactura(pedido)}
+                      >
                         Ver Detalles
                       </button>
                     </td>
@@ -341,8 +391,22 @@ const ClienteView: React.FC = () => {
                     ❤️
                   </button>
                 </div>
-                {producto.imagenUrl && (
-                  <img src={producto.imagenUrl} alt={producto.nombre} className="w-full h-32 object-contain mb-2" />
+                {producto.nombre === 'Taladro Percutor 650W' ? (
+                  <img
+                    src={'http://localhost:5200/images/productos/Taladro percutor 650W.webp'}
+                    alt={producto.nombre}
+                    className="w-full h-32 object-contain mb-2"
+                    onError={e => { e.currentTarget.src = '/images/productos/default.png'; }}
+                  />
+                ) : (
+                  producto.imagenUrl && (
+                    <img
+                      src={producto.imagenUrl}
+                      alt={producto.nombre}
+                      className="w-full h-32 object-contain mb-2"
+                      onError={e => { e.currentTarget.src = '/images/productos/default.png'; }}
+                    />
+                  )
                 )}
                 <p className="text-ferremas-gray-600 text-sm mb-3 line-clamp-2">
                   {producto.descripcion || 'Sin descripción'}
@@ -374,50 +438,77 @@ const ClienteView: React.FC = () => {
         </div>
       </section>
 
-      {/* Catálogo de Productos */}
-      <section className="card">
-        <h2 className="text-xl font-semibold text-ferremas-primary mb-4">
-          Catálogo de Productos
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="bg-ferremas-gray-50">
-                <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Código</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Producto</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Descripción</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Precio</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Stock</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productosCatalogo && productosCatalogo.length > 0 ? (
-                productosCatalogo.map((producto) => (
-                  <tr key={producto.id} className="border-b border-ferremas-gray-100">
-                    <td className="px-4 py-3">{producto.codigo}</td>
-                    <td className="px-4 py-3">{producto.nombre}</td>
-                    <td className="px-4 py-3">{producto.descripcion}</td>
-                    <td className="px-4 py-3">${producto.precio?.toLocaleString() || '0'}</td>
-                    <td className="px-4 py-3">{producto.stock}</td>
-                    <td className="px-4 py-3">
-                      <button className="btn-primary btn-xs" onClick={() => alert(`Agregar ${producto.nombre} al carrito`)}>
-                        Agregar al Carrito
-                      </button>
+      {/* Catálogo de Productos (ADMIN) */}
+      {user?.rol?.toLowerCase() === 'administrador' || user?.rol?.toUpperCase() === 'ADMIN' ? (
+        <section className="card">
+          <h2 className="text-xl font-semibold text-ferremas-primary mb-4">
+            Administración de Productos
+          </h2>
+          <div className="mb-4 flex justify-end">
+            <button
+              className="bg-ferremas-primary text-white font-semibold px-4 py-2 rounded shadow hover:bg-ferremas-primary-dark transition"
+              onClick={() => {/* TODO: Abrir modal para agregar producto */}}
+            >
+              + Agregar Producto
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="bg-ferremas-gray-50">
+                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Código</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Producto</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Descripción</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Precio</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Stock</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Acción</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-ferremas-gray-600">Admin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productosCatalogo && productosCatalogo.length > 0 ? (
+                  productosCatalogo.map((producto) => (
+                    <tr key={producto.id} className="border-b border-ferremas-gray-100">
+                      <td className="px-4 py-3">{producto.codigo}</td>
+                      <td className="px-4 py-3">{producto.nombre}</td>
+                      <td className="px-4 py-3">{producto.descripcion}</td>
+                      <td className="px-4 py-3">${producto.precio?.toLocaleString() || '0'}</td>
+                      <td className="px-4 py-3">{producto.stock}</td>
+                      <td className="px-4 py-3">
+                        <button className="btn-primary btn-xs" onClick={() => alert(`Agregar ${producto.nombre} al carrito`)}>
+                          Agregar al Carrito
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 flex gap-2">
+                        <button
+                          className="text-blue-600 hover:underline"
+                          title="Editar"
+                          onClick={() => {/* TODO: Abrir modal para editar producto */}}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="text-red-600 hover:underline"
+                          title="Eliminar"
+                          onClick={() => eliminarProducto(producto.id)}
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-ferremas-gray-500">
+                      No hay productos en el catálogo
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-ferremas-gray-500">
-                    No hay productos en el catálogo
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       {/* Acciones Rápidas */}
       <section className="card">

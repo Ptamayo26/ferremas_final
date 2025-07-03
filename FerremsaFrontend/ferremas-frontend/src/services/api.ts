@@ -118,5 +118,10 @@ export const api = {
   async confirmarTransaccionWebpay(token: string): Promise<any> {
     const response = await apiClient.post('/api/Webpay/confirmar-transaccion', { Token: token });
     return response.data;
+  },
+
+  async getFacturaByPedidoId(pedidoId: number): Promise<any> {
+    const response = await apiClient.get(`/api/facturas/factura/${pedidoId}`);
+    return response.data;
   }
 };

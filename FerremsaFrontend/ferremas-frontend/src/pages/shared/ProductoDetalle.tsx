@@ -88,6 +88,9 @@ const ProductoDetalle: React.FC = () => {
         );
     }
 
+    // Agregar log para depuración
+    console.log('Producto recibido en detalle:', producto);
+
     return (
         <div className="container mx-auto px-2 md:px-8 py-8">
             {/* Header con navegación */}
@@ -139,11 +142,17 @@ const ProductoDetalle: React.FC = () => {
                         <div className="mb-4 flex items-end gap-4">
                             {tieneDescuento ? (
                                 <>
-                                    <div className="text-4xl font-bold text-red-500">${producto.precioConDescuento?.toLocaleString('es-CL')}</div>
-                                    <div className="text-lg text-gray-400 line-through">${producto.precioOriginal?.toLocaleString('es-CL')}</div>
+                                    <div className="text-4xl font-bold text-red-500">
+                                        ${producto.precioConDescuento?.toLocaleString('es-CL') ?? producto.precio?.toLocaleString('es-CL')}
+                                    </div>
+                                    <div className="text-lg text-gray-400 line-through">
+                                        ${producto.precioOriginal?.toLocaleString('es-CL') ?? producto.precio?.toLocaleString('es-CL')}
+                                    </div>
                                 </>
                             ) : (
-                                <div className="text-4xl font-bold text-ferremas-primary">${producto.precioOriginal?.toLocaleString('es-CL')}</div>
+                                <div className="text-4xl font-bold text-ferremas-primary">
+                                    ${producto.precio?.toLocaleString('es-CL')}
+                                </div>
                             )}
                         </div>
                         {/* Selector de cantidad */}
