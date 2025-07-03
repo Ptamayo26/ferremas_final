@@ -153,7 +153,7 @@ namespace Ferremas.Api.Controllers
         {
             var producto = new Producto
             {
-                Codigo = dto.Codigo,
+                Codigo = "TEMP", // Temporal, se actualizará después
                 Nombre = dto.Nombre,
                 Descripcion = dto.Descripcion,
                 Precio = dto.Precio,
@@ -166,6 +166,11 @@ namespace Ferremas.Api.Controllers
                 Activo = true
             };
             _context.Productos.Add(producto);
+            await _context.SaveChangesAsync();
+
+            // Generar el código automático: Mxx-Cyy-zzzzz
+            string codigoAuto = $"M{producto.MarcaId?.ToString("D2") ?? "00"}-C{producto.CategoriaId?.ToString("D2") ?? "00"}-{producto.Id.ToString("D5")}";
+            producto.Codigo = codigoAuto;
             await _context.SaveChangesAsync();
 
             // Mapear a DTO de respuesta
@@ -455,6 +460,20 @@ namespace Ferremas.Api.Controllers
             };
 
             return Ok(response);
+        }
+
+        [HttpPost("actualizar-codigos")]
+        [Authorize(Roles = "administrador")]
+        public async Task<IActionResult> ActualizarCodigosProductos()
+        {
+            var productos = _context.Productos.ToList();
+            foreach (var producto in productos)
+            {
+                string codigoAuto = $"M{(producto.MarcaId ?? 0).ToString("D2")}-C{(producto.CategoriaId ?? 0).ToString("D2")}-{producto.Id.ToString("D5")}";
+                producto.Codigo = codigoAuto;
+            }
+            await _context.SaveChangesAsync();
+            return Ok(new { mensaje = "Códigos actualizados correctamente" });
         }
     }
 }

@@ -134,5 +134,17 @@ export const api = {
   async confirmarTransaccionWebpay(token: string): Promise<any> {
     const response = await apiClient.post('/api/Webpay/confirmar-transaccion', { Token: token });
     return response.data;
+  },
+
+  // Marcas
+  async getMarcas(): Promise<{ id: number; nombre: string; descripcion?: string; logoUrl?: string }[]> {
+    const response = await publicApiClient.get('/api/Marcas');
+    return response.data;
+  },
+
+  // Categorías
+  async getCategorias(): Promise<{ id: number; nombre: string; descripcion?: string; codigo?: string }[]> {
+    const response = await publicApiClient.get('/api/Categorias');
+    return response.data;
   }
 };
