@@ -59,7 +59,7 @@ namespace Ferremas.Api.Controllers
                         Rut = u.Rut,
                         Telefono = u.Telefono,
                         Rol = u.Rol,
-                        Activo = u.Activo ?? false,
+                        Activo = u.Activo,
                         FechaRegistro = u.FechaRegistro
                     })
                     .ToListAsync();
@@ -93,7 +93,7 @@ namespace Ferremas.Api.Controllers
                 Rut = usuario.Rut,
                 Telefono = usuario.Telefono,
                 Rol = usuario.Rol,
-                Activo = usuario.Activo ?? false,
+                Activo = usuario.Activo,
                 FechaRegistro = usuario.FechaRegistro
             };
         }
@@ -117,7 +117,7 @@ namespace Ferremas.Api.Controllers
                 Rut = usuario.Rut,
                 Telefono = usuario.Telefono,
                 Rol = usuario.Rol,
-                Activo = usuario.Activo ?? false,
+                Activo = usuario.Activo,
                 FechaRegistro = usuario.FechaRegistro
             };
         }
@@ -144,7 +144,7 @@ namespace Ferremas.Api.Controllers
         public async Task<IActionResult> PutUsuario(int id, UsuarioUpdateDTO usuarioDto)
         {
             var usuario = await _context.Usuarios.FindAsync(id);
-            if (usuario == null || !usuario.Activo.GetValueOrDefault())
+            if (usuario == null || !usuario.Activo)
                 return NotFound();
 
             if (usuarioDto.Email != usuario.Email && 
@@ -160,7 +160,7 @@ namespace Ferremas.Api.Controllers
             if (usuarioDto.Apellido != null) usuario.Apellido = usuarioDto.Apellido;
             if (usuarioDto.Telefono != null) usuario.Telefono = usuarioDto.Telefono;
             if (usuarioDto.Rol != null) usuario.Rol = usuarioDto.Rol;
-            if (usuarioDto.Activo.HasValue) usuario.Activo = usuarioDto.Activo;
+            if (usuarioDto.Activo.HasValue) usuario.Activo = usuarioDto.Activo.Value;
             if (usuarioDto.Email != null) usuario.Email = usuarioDto.Email;
             if (usuarioDto.FechaRegistro != null) usuario.FechaRegistro = usuarioDto.FechaRegistro.Value;
             if (usuarioDto.Rut != null) usuario.Rut = usuarioDto.Rut;
@@ -186,7 +186,7 @@ namespace Ferremas.Api.Controllers
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var usuario = await _context.Usuarios.FindAsync(userId);
-            if (usuario == null || !usuario.Activo.GetValueOrDefault())
+            if (usuario == null || !usuario.Activo)
                 return NotFound();
 
             if (usuarioDto.Email != usuario.Email && 
@@ -202,7 +202,7 @@ namespace Ferremas.Api.Controllers
             if (usuarioDto.Apellido != null) usuario.Apellido = usuarioDto.Apellido;
             if (usuarioDto.Telefono != null) usuario.Telefono = usuarioDto.Telefono;
             if (usuarioDto.Rol != null) usuario.Rol = usuarioDto.Rol;
-            if (usuarioDto.Activo.HasValue) usuario.Activo = usuarioDto.Activo;
+            if (usuarioDto.Activo.HasValue) usuario.Activo = usuarioDto.Activo.Value;
             if (usuarioDto.Email != null) usuario.Email = usuarioDto.Email;
             if (usuarioDto.FechaRegistro != null) usuario.FechaRegistro = usuarioDto.FechaRegistro.Value;
             if (usuarioDto.Rut != null) usuario.Rut = usuarioDto.Rut;

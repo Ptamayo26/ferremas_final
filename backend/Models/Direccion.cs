@@ -11,9 +11,8 @@ namespace Ferremas.Api.Models
         [Column("id")]
         public int Id { get; set; }
         
-        [Required]
         [Column("cliente_id")]
-        public int ClienteId { get; set; }
+        public int? ClienteId { get; set; }
         
         [Column("usuario_id")]
         public int? UsuarioId { get; set; }
@@ -47,7 +46,7 @@ namespace Ferremas.Api.Models
         public string? CodigoPostal { get; set; }
         
         [Column("es_principal")]
-        public bool? EsPrincipal { get; set; }
+        public bool EsPrincipal { get; set; } = false;
         
         [Column("FechaCreacion")]
         public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
@@ -57,7 +56,7 @@ namespace Ferremas.Api.Models
         
         // Relaciones
         [ForeignKey("ClienteId")]
-        public virtual Usuario Cliente { get; set; } = null!;
+        public virtual Cliente? Cliente { get; set; }
         
         [ForeignKey("UsuarioId")]
         public virtual Usuario? Usuario { get; set; }

@@ -14,11 +14,11 @@ namespace Ferremas.Api.Models
         
         [Required]
         [Column("nombre")]
-        [StringLength(50)]
+        [StringLength(100)]
         public string Nombre { get; set; } = string.Empty;
         
         [Column("apellido")]
-        [StringLength(50)]
+        [StringLength(100)]
         public string? Apellido { get; set; }
         
         [Required]
@@ -29,11 +29,11 @@ namespace Ferremas.Api.Models
         
         [Required]
         [Column("password")]
-        [StringLength(100)]
+        [StringLength(255)]
         public string PasswordHash { get; set; } = string.Empty;
         
         [Column("rut")]
-        [StringLength(20)]
+        [StringLength(12)]
         public string? Rut { get; set; }
         
         [Column("telefono")]
@@ -42,11 +42,11 @@ namespace Ferremas.Api.Models
         
         [Column("rol")]
         [Required]
-        [StringLength(20)]
-        public string Rol { get; set; } = "Cliente";
+        [StringLength(30)]
+        public string Rol { get; set; } = "cliente";
         
         [Column("activo")]
-        public bool? Activo { get; set; } = true;
+        public bool Activo { get; set; } = true;
         
         [Column("fecha_registro")]
         public DateTime? FechaRegistro { get; set; }

@@ -6,6 +6,7 @@ import { AppProvider } from './context/AppContext';
 
 // Páginas de autenticación
 import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 
 // Vistas principales
 import CatalogoProductos from './views/CatalogoProductos';
@@ -63,6 +64,7 @@ const AppContent: React.FC = () => {
           <Route path="/catalogo" element={<CatalogoProductos />} />
           <Route path="/producto/:id" element={<ProductoDetalle />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           
           {/* Rutas de prueba y diagnóstico */}
           {/* <Route path="/test-colors" element={<ColorTest />} /> */}

@@ -49,11 +49,14 @@ class AuthService {
   async register(userData: UsuarioCreateDTO): Promise<AuthResponse> {
     try {
       console.log('👤 Registrando nuevo usuario:', userData.email);
+      console.log('📤 [AUTH] Datos completos enviados al backend:', JSON.stringify(userData, null, 2));
       
       const response = await authApiClient.post<AuthResponse>(
         AUTH_ENDPOINTS.REGISTER,
         userData
       );
+
+      console.log('📥 [AUTH] Respuesta del backend:', JSON.stringify(response.data, null, 2));
 
       // Si el registro incluye auto-login, manejar el token
       if (response.data.exito && response.data.token) {
@@ -61,8 +64,12 @@ class AuthService {
       }
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error en registro:', error);
+      if (error.response) {
+        console.error('❌ [AUTH] Respuesta de error del servidor:', JSON.stringify(error.response.data, null, 2));
+        console.error('❌ [AUTH] Status code:', error.response.status);
+      }
       throw this.handleAuthError(error);
     }
   }

@@ -22,7 +22,7 @@ namespace Ferremas.Api.Services
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
-        private static readonly HashSet<string> RolesPermitidos = new HashSet<string> { "administrador", "vendedor", "bodeguero", "contador", "repartidor" };
+        private static readonly HashSet<string> RolesPermitidos = new HashSet<string> { "administrador", "vendedor", "bodeguero", "contador", "repartidor", "cliente" };
 
         public AuthService(
             AppDbContext context,
@@ -38,6 +38,14 @@ namespace Ferremas.Api.Services
         public async Task<AuthResponse> RegisterAsync(UsuarioCreateDTO registerDto)
         {
             _logger.LogInformation("Iniciando registro de usuario");
+            _logger.LogInformation("Datos recibidos: Nombre={Nombre}, Apellido={Apellido}, Email={Email}, Rut={Rut}, Telefono={Telefono}, Rol={Rol}", 
+                registerDto.Nombre, registerDto.Apellido, registerDto.Email, registerDto.Rut, registerDto.Telefono, registerDto.Rol);
+            
+            if (registerDto.Direccion != null)
+            {
+                _logger.LogInformation("Dirección recibida: Calle={Calle}, Numero={Numero}, Comuna={Comuna}, Region={Region}", 
+                    registerDto.Direccion.Calle, registerDto.Direccion.Numero, registerDto.Direccion.Comuna, registerDto.Direccion.Region);
+            }
             
             // Validar rol permitido
             if (string.IsNullOrWhiteSpace(registerDto.Rol) || !RolesPermitidos.Contains(registerDto.Rol.ToLower()))
@@ -47,14 +55,14 @@ namespace Ferremas.Api.Services
             }
 
             // Validar duplicado por RUT
-            if (await _context.Usuarios.AnyAsync(u => u.Rut == registerDto.Rut))
+            if (!string.IsNullOrWhiteSpace(registerDto.Rut) && await _context.Usuarios.AnyAsync(u => u.Rut == registerDto.Rut))
             {
                 _logger.LogWarning("Intento de registro con RUT duplicado: {Rut}", registerDto.Rut);
                 return new AuthResponse { Exito = false, Mensaje = "El RUT ya está registrado." };
             }
 
             // Validar duplicado por Email
-            if (await _context.Usuarios.AnyAsync(u => u.Email == registerDto.Email))
+            if (!string.IsNullOrWhiteSpace(registerDto.Email) && await _context.Usuarios.AnyAsync(u => u.Email == registerDto.Email))
             {
                 _logger.LogWarning("Intento de registro con email duplicado: {Email}", registerDto.Email);
                 return new AuthResponse { Exito = false, Mensaje = "El correo electrónico ya está registrado." };
@@ -76,6 +84,50 @@ namespace Ferremas.Api.Services
 
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
+
+            // Si el usuario es cliente, crear registro en tabla clientes
+            if (registerDto.Rol?.ToLower() == "cliente")
+            {
+                var cliente = new Cliente
+                {
+                    UsuarioId = usuario.Id,
+                    Nombre = usuario.Nombre,
+                    Apellido = usuario.Apellido,
+                    Rut = usuario.Rut,
+                    Telefono = usuario.Telefono,
+                    CorreoElectronico = usuario.Email,
+                    FechaCreacion = DateTime.UtcNow,
+                    Activo = true
+                };
+
+                _context.Clientes.Add(cliente);
+                await _context.SaveChangesAsync();
+
+                // Si se proporciona una dirección, crear la dirección
+                if (registerDto.Direccion != null)
+                {
+                    var direccion = new Direccion
+                    {
+                        ClienteId = cliente.Id, // Usar el ID del cliente, no del usuario
+                        UsuarioId = usuario.Id, // Opcional, para referencia
+                        Calle = registerDto.Direccion.Calle,
+                        Numero = registerDto.Direccion.Numero,
+                        Departamento = registerDto.Direccion.Departamento,
+                        Comuna = registerDto.Direccion.Comuna,
+                        Region = registerDto.Direccion.Region,
+                        CodigoPostal = registerDto.Direccion.CodigoPostal,
+                        EsPrincipal = registerDto.Direccion.EsPrincipal, // Usar el valor del DTO
+                        FechaCreacion = DateTime.UtcNow
+                    };
+
+                    _context.Direcciones.Add(direccion);
+                    await _context.SaveChangesAsync();
+                    
+                    _logger.LogInformation("Dirección creada para el cliente: {Email}", usuario.Email);
+                }
+                
+                _logger.LogInformation("Cliente creado para el usuario: {Email}", usuario.Email);
+            }
             
             var token = GenerateJwtToken(usuario);
             _logger.LogInformation("Usuario registrado exitosamente: {Email}", usuario.Email);
@@ -94,7 +146,7 @@ namespace Ferremas.Api.Services
                     Rut = usuario.Rut,
                     Telefono = usuario.Telefono,
                     Rol = usuario.Rol,
-                    Activo = usuario.Activo ?? false,
+                    Activo = usuario.Activo,
                     FechaRegistro = usuario.FechaRegistro
                 }
             };
@@ -147,7 +199,7 @@ namespace Ferremas.Api.Services
                         Rut = usuario.Rut,
                         Telefono = usuario.Telefono,
                         Rol = usuario.Rol,
-                        Activo = usuario.Activo ?? false,
+                        Activo = usuario.Activo,
                         FechaRegistro = usuario.FechaRegistro
                     }
                 };
@@ -252,7 +304,7 @@ namespace Ferremas.Api.Services
                             Rut = usuario.Rut,
                             Telefono = usuario.Telefono,
                             Rol = usuario.Rol,
-                            Activo = usuario.Activo ?? false,
+                            Activo = usuario.Activo,
                             FechaRegistro = usuario.FechaRegistro
                         }
                     };
