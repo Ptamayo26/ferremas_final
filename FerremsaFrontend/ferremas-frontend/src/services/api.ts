@@ -3,7 +3,9 @@ import axios from 'axios';
 import type { LoginDTO, Pedido, ProductoResponseDTO, UsuarioCreateDTO, CarritoItemDTO, CarritoResumenDTO } from '../types/api';
 import { STORAGE_KEYS } from '../constants/api';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5200';
+// En desarrollo, usar URL relativa para que funcione el proxy de Vite
+// En producción, usar la URL completa del backend
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'http://localhost:5200');
 
 // Cliente de API público para endpoints que no requieren autenticación
 export const publicApiClient = axios.create({
@@ -15,7 +17,7 @@ export const apiClient = axios.create({
     baseURL: API_URL,
 });
 
-// Interceptor para agregar el token de autenticación a las peticiones
+// Interceptor para agregar el token de autenticación SOLO a las peticiones autenticadas
 apiClient.interceptors.request.use(
   (config) => {
     // Obtenemos el token directamente de localStorage usando la clave correcta
@@ -30,6 +32,20 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// El publicApiClient NO debe tener interceptores de autenticación
+// para evitar enviar tokens en endpoints públicos
+
+// Interceptor de respuesta para publicApiClient (solo logging, no limpiar tokens)
+publicApiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      console.warn('Endpoint público devolvió 401 - verificar configuración del backend');
+    }
     return Promise.reject(error);
   }
 );

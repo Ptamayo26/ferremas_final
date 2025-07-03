@@ -123,6 +123,10 @@ builder.Services.AddScoped<WhatsAppWebService>();
 // Registrar ChilexpressCotizadorService
 builder.Services.AddHttpClient<ChilexpressCotizadorService>();
 
+// Registrar ChileGeoService
+builder.Services.AddHttpClient<ChileGeoService>();
+builder.Services.AddScoped<ChileGeoService>();
+
 // Add CORS
 builder.Services.AddCors(options =>
 {

@@ -43,7 +43,7 @@ namespace Ferremas.Api.Controllers
                         Comuna = d.Comuna,
                         Region = d.Region,
                         CodigoPostal = d.CodigoPostal,
-                        EsPrincipal = d.EsPrincipal ?? false,
+                        EsPrincipal = d.EsPrincipal,
                         FechaModificacion = d.FechaModificacion
                     })
                     .ToListAsync();
@@ -112,7 +112,7 @@ namespace Ferremas.Api.Controllers
                     Comuna = direccion.Comuna,
                     Region = direccion.Region,
                     CodigoPostal = direccion.CodigoPostal,
-                    EsPrincipal = direccion.EsPrincipal ?? false,
+                    EsPrincipal = direccion.EsPrincipal,
                     FechaModificacion = direccion.FechaModificacion
                 });
             }
@@ -165,7 +165,7 @@ namespace Ferremas.Api.Controllers
                     Comuna = direccion.Comuna,
                     Region = direccion.Region,
                     CodigoPostal = direccion.CodigoPostal,
-                    EsPrincipal = direccion.EsPrincipal ?? false,
+                    EsPrincipal = direccion.EsPrincipal,
                     FechaModificacion = direccion.FechaModificacion
                 });
             }
@@ -241,7 +241,7 @@ namespace Ferremas.Api.Controllers
                     Comuna = direccion.Comuna,
                     Region = direccion.Region,
                     CodigoPostal = direccion.CodigoPostal,
-                    EsPrincipal = direccion.EsPrincipal ?? false,
+                    EsPrincipal = direccion.EsPrincipal,
                     FechaModificacion = direccion.FechaModificacion
                 });
             }

@@ -39,7 +39,7 @@ namespace Ferremas.Api.Services
                 Telefono = c.Telefono,
                 FechaCreacion = c.FechaCreacion.GetValueOrDefault(),
                 FechaModificacion = c.FechaModificacion.GetValueOrDefault(),
-                Activo = c.Activo.GetValueOrDefault(),
+                Activo = c.Activo,
                 UsuarioId = c.UsuarioId,
                 Direcciones = c.Usuario?.Direcciones?.Select(d => new DireccionDTO
                 {
@@ -50,7 +50,7 @@ namespace Ferremas.Api.Services
                     Comuna = d.Comuna,
                     Region = d.Region,
                     CodigoPostal = d.CodigoPostal,
-                    EsPrincipal = d.EsPrincipal ?? false,
+                    EsPrincipal = d.EsPrincipal,
                     FechaModificacion = d.FechaModificacion.GetValueOrDefault()
                 }).ToList()
             });
@@ -76,7 +76,7 @@ namespace Ferremas.Api.Services
                 Telefono = cliente.Telefono,
                 FechaCreacion = cliente.FechaCreacion.GetValueOrDefault(),
                 FechaModificacion = cliente.FechaModificacion.GetValueOrDefault(),
-                Activo = cliente.Activo.GetValueOrDefault(),
+                Activo = cliente.Activo,
                 UsuarioId = cliente.UsuarioId,
                 Direcciones = cliente.Usuario?.Direcciones?.Select(d => new DireccionDTO
                 {
@@ -87,7 +87,7 @@ namespace Ferremas.Api.Services
                     Comuna = d.Comuna,
                     Region = d.Region,
                     CodigoPostal = d.CodigoPostal,
-                    EsPrincipal = d.EsPrincipal ?? false,
+                    EsPrincipal = d.EsPrincipal,
                     FechaModificacion = d.FechaModificacion.GetValueOrDefault()
                 }).ToList()
             };
@@ -172,7 +172,7 @@ namespace Ferremas.Api.Services
                 Telefono = cliente.Telefono,
                 FechaCreacion = cliente.FechaCreacion.GetValueOrDefault(),
                 FechaModificacion = cliente.FechaModificacion.GetValueOrDefault(),
-                Activo = cliente.Activo.GetValueOrDefault(),
+                Activo = cliente.Activo,
                 UsuarioId = cliente.UsuarioId,
                 Direcciones = cliente.Usuario?.Direcciones?.Select(d => new DireccionDTO
                 {
@@ -183,7 +183,7 @@ namespace Ferremas.Api.Services
                     Comuna = d.Comuna,
                     Region = d.Region,
                     CodigoPostal = d.CodigoPostal,
-                    EsPrincipal = d.EsPrincipal ?? false,
+                    EsPrincipal = d.EsPrincipal,
                     FechaModificacion = d.FechaModificacion.GetValueOrDefault()
                 }).ToList()
             };
@@ -249,7 +249,7 @@ namespace Ferremas.Api.Services
                 Telefono = cliente.Telefono,
                 FechaCreacion = cliente.FechaCreacion.GetValueOrDefault(),
                 FechaModificacion = cliente.FechaModificacion.GetValueOrDefault(),
-                Activo = cliente.Activo.GetValueOrDefault(),
+                Activo = cliente.Activo,
                 UsuarioId = cliente.UsuarioId,
                 Direcciones = cliente.Usuario?.Direcciones?.Select(d => new DireccionDTO
                 {
@@ -260,7 +260,7 @@ namespace Ferremas.Api.Services
                     Comuna = d.Comuna,
                     Region = d.Region,
                     CodigoPostal = d.CodigoPostal,
-                    EsPrincipal = d.EsPrincipal ?? false,
+                    EsPrincipal = d.EsPrincipal,
                     FechaModificacion = d.FechaModificacion.GetValueOrDefault()
                 }).ToList()
             };

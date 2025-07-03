@@ -45,7 +45,7 @@ namespace Ferremas.Api.Services
                 Rut = u.Rut,
                 Telefono = u.Telefono,
                 Rol = u.Rol,
-                Activo = u.Activo ?? false,
+                Activo = u.Activo,
                 FechaRegistro = u.FechaRegistro
             });
         }
@@ -67,7 +67,7 @@ namespace Ferremas.Api.Services
                 Rut = usuario.Rut,
                 Telefono = usuario.Telefono,
                 Rol = usuario.Rol,
-                Activo = usuario.Activo ?? false,
+                Activo = usuario.Activo,
                 FechaRegistro = usuario.FechaRegistro
             };
         }
@@ -100,7 +100,7 @@ namespace Ferremas.Api.Services
                 Rut = usuario.Rut,
                 Telefono = usuario.Telefono,
                 Rol = usuario.Rol,
-                Activo = usuario.Activo ?? false,
+                Activo = usuario.Activo,
                 FechaRegistro = usuario.FechaRegistro
             };
         }
@@ -129,7 +129,7 @@ namespace Ferremas.Api.Services
                 Rut = usuario.Rut,
                 Telefono = usuario.Telefono,
                 Rol = usuario.Rol,
-                Activo = usuario.Activo ?? false,
+                Activo = usuario.Activo,
                 FechaRegistro = usuario.FechaRegistro
             };
         }

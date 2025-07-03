@@ -106,7 +106,16 @@ const Login: React.FC = () => {
                         </button>
                     </div>
 
-                    <div className="text-center">
+                    <div className="text-center space-y-2">
+                        <p className="text-sm text-ferremas-gray-600">
+                            ¿No tienes una cuenta?{' '}
+                            <Link 
+                                to="/register" 
+                                className="text-ferremas-secondary hover:text-ferremas-accent font-medium transition-colors duration-200"
+                            >
+                                Regístrate aquí
+                            </Link>
+                        </p>
                         <Link 
                             to="/catalogo" 
                             className="text-ferremas-secondary hover:text-ferremas-accent text-sm transition-colors duration-200"
