@@ -285,7 +285,8 @@ namespace Ferremas.Api.Controllers
 
                 var totalItems = itemsValidos.Sum(c => c.Cantidad);
                 var subtotal = itemsValidos.Sum(c => c.Producto.Precio * c.Cantidad);
-                var total = subtotal; // Por ahora sin impuestos ni descuentos
+                var impuestos = subtotal * 0.19m; // IVA 19%
+                var total = Math.Round(subtotal + impuestos, 0); // Redondear a enteros para Webpay CLP
 
                 return Ok(new CarritoResumenDTO
                 {

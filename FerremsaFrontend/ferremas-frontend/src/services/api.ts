@@ -120,16 +120,16 @@ export const api = {
     return response.data;
   },
 
-  async crearTransaccionWebpay(amount: number, buyOrder: string, sessionId: string, returnUrl: string): Promise<{ url: string; token: string }> {
-    const response = await apiClient.post('/api/Webpay/crear-transaccion', {
-      Amount: amount,
-      BuyOrder: buyOrder,
-      SessionId: sessionId,
-      ReturnUrl: returnUrl
-    });
-    // La respuesta del backend debe contener url y token
-    return response.data;
-  },
+  // ✅ Este método ya no es necesario porque el checkout maneja Webpay directamente
+  // async crearTransaccionWebpay(amount: number, buyOrder: string, sessionId: string, returnUrl: string): Promise<{ url: string; token: string }> {
+  //   const response = await apiClient.post('/api/Webpay/crear-transaccion', {
+  //     Amount: amount,
+  //     BuyOrder: buyOrder,
+  //     SessionId: sessionId,
+  //     ReturnUrl: returnUrl
+  //   });
+  //   return response.data;
+  // },
 
   async confirmarTransaccionWebpay(token: string): Promise<any> {
     const response = await apiClient.post('/api/Webpay/confirmar-transaccion', { Token: token });

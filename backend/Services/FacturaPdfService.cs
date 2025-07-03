@@ -68,13 +68,13 @@ namespace Ferremas.Api.Services
 
                         col.Item().PaddingVertical(10).Element(BuildTablaProductos(pedido));
 
-                        decimal subtotal = pedido.Detalles.Sum(x => x.Subtotal ?? 0);
-                        decimal iva = Math.Round(subtotal * 0.19m);
-                        decimal total = pedido.Total ?? subtotal + iva;
+                        decimal total = pedido.Total ?? 0;
+                        decimal neto = Math.Round(total / 1.19m, 0);
+                        decimal iva = total - neto;
 
                         col.Item().PaddingTop(10).AlignRight().Column(tot =>
                         {
-                            tot.Item().Text($"Subtotal: ${subtotal:N0}").Style(Normal);
+                            tot.Item().Text($"Subtotal: ${total:N0}").Style(Normal);
                             tot.Item().Text($"IVA (19%): ${iva:N0}").Style(Normal);
                             tot.Item().Background(Colors.Grey.Lighten2).Padding(5).Text($"Total: ${total:N0}").Style(Titulo);
                         });
@@ -127,13 +127,13 @@ namespace Ferremas.Api.Services
 
                         col.Item().PaddingVertical(10).Element(BuildTablaProductos(pedido));
 
-                        decimal subtotal = pedido.Detalles.Sum(x => x.Subtotal ?? 0);
-                        decimal iva = Math.Round(subtotal * 0.19m);
-                        decimal total = pedido.Total ?? subtotal + iva;
+                        decimal total = pedido.Total ?? 0;
+                        decimal neto = Math.Round(total / 1.19m, 0);
+                        decimal iva = total - neto;
 
                         col.Item().PaddingTop(10).AlignRight().Column(tot =>
                         {
-                            tot.Item().Text($"Subtotal: ${subtotal:N0}").Style(Normal);
+                            tot.Item().Text($"Subtotal: ${total:N0}").Style(Normal);
                             tot.Item().Text($"IVA (19%): ${iva:N0}").Style(Normal);
                             tot.Item().Background(Colors.Grey.Lighten2).Padding(5).Text($"Total: ${total:N0}").Style(Titulo);
                         });

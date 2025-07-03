@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Ferremas.Api.Data;
 using Ferremas.Api.Models;
 using System.Security.Claims;
+using Ferremas.Api.Services;
 
 namespace Ferremas.Api.Controllers
 {
@@ -19,11 +20,13 @@ namespace Ferremas.Api.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IDescuentoService _descuentoService;
+        private readonly WebpayService _webpayService;
 
-        public CheckoutController(AppDbContext context, IDescuentoService descuentoService)
+        public CheckoutController(AppDbContext context, IDescuentoService descuentoService, WebpayService webpayService)
         {
             _context = context;
             _descuentoService = descuentoService;
+            _webpayService = webpayService;
         }
 
         [HttpGet("resumen")]
@@ -69,7 +72,7 @@ namespace Ferremas.Api.Controllers
                 var descuento = 0m; // Por ahora sin descuentos
                 var impuestos = subtotal * 0.19m; // IVA 19%
                 var envio = 0m; // Por ahora sin costo de envío
-                var total = subtotal + impuestos + envio - descuento;
+                var total = Math.Round(subtotal + impuestos + envio - descuento, 0); // Redondear a enteros para Webpay CLP
 
                 // Obtener dirección principal
                 var direccionEnvio = cliente.Usuario?.Direcciones?.FirstOrDefault(d => d.EsPrincipal == true);
@@ -114,8 +117,20 @@ namespace Ferremas.Api.Controllers
 
         [HttpPost]
         [AllowAnonymous]
-        public async Task<ActionResult<CheckoutResponseDTO>> ProcesarCheckout([FromBody] CheckoutRequestDTO dto)
+        public async Task<ActionResult<CheckoutResponseDTO>> ProcesarCheckout([FromBody] CheckoutRequestDTO? dto)
         {
+            if (dto == null)
+            {
+                Console.WriteLine("[Checkout] Error: DTO es null");
+                return BadRequest("Datos de checkout requeridos");
+            }
+
+            Console.WriteLine($"[Checkout] Iniciando procesamiento de checkout - Usuario: {GetUsuarioIdFromToken()?.ToString() ?? "Anónimo"}");
+            Console.WriteLine($"[Checkout] ClienteId recibido: {dto.ClienteId?.ToString() ?? "NULL"}");
+            Console.WriteLine($"[Checkout] MetodoPago: {dto.MetodoPago}");
+            Console.WriteLine($"[Checkout] Items count: {dto.Items?.Count ?? 0}");
+            Console.WriteLine($"[Checkout] Datos completos: {System.Text.Json.JsonSerializer.Serialize(dto)}");
+            
             try
             {
                 var usuarioId = GetUsuarioIdFromToken();
@@ -128,7 +143,7 @@ namespace Ferremas.Api.Controllers
                     // Crear cliente temporal
                     cliente = new Cliente
                     {
-                        Nombre = "Cliente Anónimo",
+                        Nombre = dto.Rut ?? "Cliente Anónimo", // Usar RUT como nombre si está disponible
                         Apellido = "",
                         Rut = dto.Rut ?? "",
                         CorreoElectronico = dto.Correo ?? "anonimo@ferremas.cl",
@@ -192,14 +207,14 @@ namespace Ferremas.Api.Controllers
                             return BadRequest($"Stock insuficiente para {item.Producto.Nombre}. Disponible: {item.Producto.Stock}");
                     }
 
-                    // Verificar que el cliente existe
+                    // SIEMPRE buscar el cliente por usuarioId
                     cliente = await _context.Clientes
                         .Include(c => c.Usuario)
                         .ThenInclude(u => u.Direcciones)
-                        .FirstOrDefaultAsync(c => c.Id == dto.ClienteId);
+                        .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
 
                     if (cliente == null)
-                        return NotFound("Cliente no encontrado");
+                        return NotFound("Cliente no encontrado para el usuario autenticado");
 
                     // Si se envía DireccionId, usar la lógica actual
                     if (dto.DireccionId != null && dto.DireccionId > 0)
@@ -250,12 +265,13 @@ namespace Ferremas.Api.Controllers
                 }
                 var impuestos = (subtotal - descuento) * 0.19m; // IVA 19% sobre el neto
                 var costoEnvio = 0m; // Por ahora sin costo de envío
-                var total = subtotal - descuento + impuestos + costoEnvio;
+                var total = Math.Round(subtotal - descuento + impuestos + costoEnvio, 0); // Redondear a enteros para Webpay CLP
 
                 // Crear el pedido
                 var pedido = new Pedido
                 {
                     UsuarioId = usuarioId,
+                    ClienteId = cliente.Id,
                     FechaPedido = DateTime.UtcNow,
                     Total = total,
                     Estado = "PENDIENTE",
@@ -327,16 +343,51 @@ namespace Ferremas.Api.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                return Ok(new CheckoutResponseDTO
+                // Generar transacción Webpay
+                var buyOrder = pedido.Id.ToString();
+                var sessionId = (usuarioId?.ToString() ?? "anon") + "-" + DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                var returnUrl = "http://localhost:3000/confirmacion-pago";
+                
+                try
                 {
-                    PedidoId = pedido.Id,
-                    NumeroPedido = numeroPedido,
-                    Total = total,
-                    Estado = pedido.Estado,
-                    FechaCreacion = pedido.FechaCreacion,
-                    UrlPago = null, // Por ahora sin integración de pagos
-                    CodigoPago = null
-                });
+                    Console.WriteLine($"[Checkout] Generando transacción Webpay - Monto: {pedido.Total}, BuyOrder: {buyOrder}, SessionId: {sessionId}");
+                    var webpayResp = _webpayService.CrearTransaccion((decimal)pedido.Total, buyOrder, sessionId, returnUrl);
+                    Console.WriteLine($"[Checkout] Transacción Webpay generada - URL: {webpayResp.Url}, Token: {webpayResp.Token}");
+                    
+                    // Guardar el pago en la base de datos
+                    var pago = new Pago
+                    {
+                        PedidoId = pedido.Id,
+                        Monto = (decimal)pedido.Total,
+                        FechaPago = DateTime.UtcNow,
+                        Estado = "PENDIENTE",
+                        MetodoPago = "WEBPAY",
+                        TransaccionId = webpayResp.Token,
+                        TokenPasarela = webpayResp.Token,
+                        DatosRespuesta = System.Text.Json.JsonSerializer.Serialize(webpayResp)
+                    };
+                    _context.Pagos.Add(pago);
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new CheckoutResponseDTO
+                    {
+                        PedidoId = pedido.Id,
+                        NumeroPedido = numeroPedido,
+                        Total = total,
+                        Estado = pedido.Estado,
+                        FechaCreacion = pedido.FechaCreacion,
+                        UrlPago = webpayResp.Url,
+                        CodigoPago = webpayResp.Token
+                    });
+                }
+                catch (Exception webpayEx)
+                {
+                    // Si falla Webpay, marcar el pedido como fallido pero no fallar completamente
+                    pedido.Estado = "FALLIDO";
+                    await _context.SaveChangesAsync();
+                    
+                    return BadRequest($"Error al generar transacción Webpay: {webpayEx.Message}");
+                }
             }
             catch (Exception ex)
             {

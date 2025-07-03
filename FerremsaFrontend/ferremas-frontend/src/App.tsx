@@ -25,6 +25,7 @@ import DebugAuth from './components/ui/DebugAuth';
 import SimpleCatalogo from './components/ui/SimpleCatalogo';
 import Carrito from './components/sales/Carrito';
 import ConfirmacionPago from './pages/shared/ConfirmacionPago';
+import CarritoAutenticado from './components/sales/CarritoAutenticado';
 
 // Componentes de layout
 import Navigation from './components/layout/Navigation';
@@ -54,6 +55,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 };
 
 const AppContent: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   return (
     <div className="flex flex-col min-h-screen bg-ferremas-background">
       {/* Forzar generación de clases de color de Ferremas */}
@@ -128,7 +130,9 @@ const AppContent: React.FC = () => {
             </ProtectedRoute>
           } />
           
-          <Route path="/carrito" element={<Carrito isOpen={true} modoPagina={true} />} />
+          <Route path="/carrito" element={
+            isAuthenticated ? <CarritoAutenticado /> : <Carrito isOpen={true} modoPagina={true} />
+          } />
           
           <Route path="/confirmacion-pago" element={<ConfirmacionPago />} />
           

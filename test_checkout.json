@@ -1,0 +1,16 @@
+{
+  "clienteId": 0,
+  "metodoPago": "WEBPAY",
+  "items": [
+    {
+      "id": 1,
+      "productoId": 1,
+      "productoNombre": "Test Product",
+      "productoPrecio": 1000,
+      "cantidad": 1,
+      "subtotal": 1000
+    }
+  ],
+  "rut": "12345678-9",
+  "correo": "test@test.com"
+} 

@@ -6,8 +6,8 @@ namespace Ferremas.Api.DTOs
 {
     public class CheckoutRequestDTO
     {
-        [Required]
-        public int ClienteId { get; set; }
+        // ClienteId es opcional para usuarios anónimos
+        public int? ClienteId { get; set; }
         
         public int? DireccionId { get; set; } // Ahora opcional
         

@@ -22,9 +22,23 @@ namespace Ferremas.Api.Services
 
         public CreateResponse CrearTransaccion(decimal amount, string buyOrder, string sessionId, string returnUrl)
         {
-            var transaction = new Transaction(_options);
-            var response = transaction.Create(buyOrder, sessionId, amount, returnUrl);
-            return response;
+            // Redondear el monto a enteros para evitar errores con decimales en CLP
+            var amountRounded = Math.Round(amount, 0);
+            Console.WriteLine($"[WebpayService] Creando transacción - Amount original: {amount}, Amount redondeado: {amountRounded}, BuyOrder: {buyOrder}, SessionId: {sessionId}, ReturnUrl: {returnUrl}");
+            
+            try
+            {
+                var transaction = new Transaction(_options);
+                var response = transaction.Create(buyOrder, sessionId, amountRounded, returnUrl);
+                
+                Console.WriteLine($"[WebpayService] Transacción creada exitosamente - Token: {response.Token}, URL: {response.Url}");
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WebpayService] Error al crear transacción: {ex.Message}");
+                throw;
+            }
         }
 
         public CommitResponse ConfirmarTransaccion(string token)

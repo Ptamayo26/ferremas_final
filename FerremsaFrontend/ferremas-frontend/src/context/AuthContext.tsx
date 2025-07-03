@@ -57,6 +57,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         setUser(appUser);
         setIsAuthenticated(true);
+
+        // --- MIGRAR CARRITO ANÓNIMO AL AUTENTICADO ---
+        try {
+          const LOCAL_STORAGE_KEY = 'carrito_anonimo';
+          const anonCart = localStorage.getItem(LOCAL_STORAGE_KEY);
+          console.log('Contenido de carrito_anonimo antes de migrar:', anonCart);
+          if (anonCart) {
+            const items = JSON.parse(anonCart);
+            if (Array.isArray(items) && items.length > 0) {
+              // Importar api dinámicamente para evitar import circular
+              const { api } = await import('../services/api');
+              for (const item of items) {
+                // Usar productoId si existe, si no usar id (pero solo si es válido)
+                const productoId = item.productoId || item.id;
+                if (productoId && item.cantidad > 0) {
+                  try {
+                    console.log('Intentando migrar producto:', item);
+                    await api.agregarAlCarrito(productoId, item.cantidad);
+                    console.log('Producto migrado correctamente:', productoId);
+                  } catch (e) {
+                    // Ignorar errores individuales (por ejemplo, stock insuficiente)
+                    console.error('Error migrando producto:', item, e);
+                  }
+                } else {
+                  console.warn('Item de carrito anónimo ignorado por falta de productoId:', item);
+                }
+              }
+              localStorage.removeItem(LOCAL_STORAGE_KEY);
+              // window.location.reload(); // Eliminado para evitar recarga
+            } else {
+              localStorage.removeItem(LOCAL_STORAGE_KEY);
+            }
+          }
+        } catch (e) {
+          console.error('Error migrando carrito anónimo:', e);
+        }
+        // --- FIN MIGRACIÓN CARRITO ---
     } else {
         throw new Error(response.mensaje || 'Error al iniciar sesión');
     }

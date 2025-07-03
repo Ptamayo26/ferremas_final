@@ -78,6 +78,11 @@ namespace Ferremas.Api.Controllers
             // Buscar cliente por usuario_id
             var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.UsuarioId == pedido.UsuarioId);
             if (cliente == null)
+            {
+                // Si no hay usuario asociado (pedido anónimo), buscar por el ClienteId del pedido
+                cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Id == pedido.ClienteId);
+            }
+            if (cliente == null)
                 return NotFound();
 
             var pdfBytes = _pdfService.GenerarBoleta(pedido, cliente);

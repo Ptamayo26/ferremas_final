@@ -401,8 +401,8 @@ export interface CarritoResumenDTO {
 // ========================================
 
 export interface CheckoutRequestDTO {
-  clienteId: number;
-  direccionId: number;
+  clienteId?: number; // Opcional para usuarios anónimos
+  direccionId?: number;
   metodoPago: string;
   observaciones?: string;
   codigoDescuento?: string;
@@ -415,6 +415,15 @@ export interface CheckoutRequestDTO {
     direccion: string;
   };
   nombreClienteTemporal?: string;
+  // Campos para dirección manual
+  calle?: string;
+  numero?: string;
+  departamento?: string;
+  comuna?: string;
+  region?: string;
+  codigoPostal?: string;
+  rut?: string;
+  correo?: string;
 }
 
 export interface CheckoutResponseDTO {

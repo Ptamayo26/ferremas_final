@@ -7,6 +7,7 @@ import ConfirmDialog from '../ui/ConfirmDialog';
 import Notification from '../ui/Notification';
 import { useNavigate } from 'react-router-dom';
 import { checkoutService } from '../../services/checkout';
+import { API_BASE_URL } from '../../constants/api';
 
 interface CarritoItem {
   id: number;
@@ -25,7 +26,7 @@ interface CarritoProps {
 }
 
 const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }) => {
-  if (!isOpen && !modoPagina) return null;
+  console.log('[DEBUG Carrito.tsx] isOpen:', isOpen, 'modoPagina:', modoPagina);
 
   const { user, isAuthenticated } = useAuth();
   const [carrito, setCarrito] = useState<CarritoItem[]>([]);
@@ -67,7 +68,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
   const navigate = useNavigate ? useNavigate() : null;
 
   // Determinar si se debe usar la API o localStorage
-  const usarApi = isAuthenticated && user && (user.rol.toLowerCase() === 'cliente' || user.rol.toUpperCase() === 'CLIENT');
+  const usarApi = isAuthenticated && user;
 
   // Agregar estados para RUT y Correo
   const [rutEnvio, setRutEnvio] = useState('');
@@ -76,8 +77,10 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
 
   // Cargar carrito según autenticación
   useEffect(() => {
-    const esCliente = isAuthenticated && user && (user.rol.toLowerCase() === 'cliente' || user.rol.toUpperCase() === 'CLIENT');
-    if (esCliente) {
+    // Determinar si se debe usar la API o localStorage
+    const usarApi = isAuthenticated && user;
+    
+    if (usarApi) {
       fetchCarrito();
     } else {
       // Cargar carrito de localStorage
@@ -109,10 +112,10 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
       }
       setItems(itemsData || []);
       setResumen(resumenData || null);
+      setLoading(false);
     } catch (err) {
       setError('No se pudo cargar el carrito');
       console.error(err);
-    } finally {
       setLoading(false);
     }
   };
@@ -279,7 +282,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     try {
       const direccionManual = nombreEnvio || direccionEnvio || ciudadEnvio;
       const checkoutData = {
-        clienteId: user?.id ?? 0,
+        clienteId: user?.id ?? null, // Enviar null para usuarios anónimos
         direccionId: direccionManual ? 0 : 1,
         metodoPago: 'WEBPAY',
         observaciones: '',
@@ -308,26 +311,26 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
       };
       console.log('Enviando checkoutData:', checkoutData);
       const response = await checkoutService.procesarCheckout(checkoutData);
-      const buyOrder = `ORD-${response.pedidoId}`;
-      const sessionId = user?.id ? String(user.id) : `anon-${Date.now()}`;
-      const returnUrl = window.location.origin + '/confirmacion-pago';
-      const resp = await api.crearTransaccionWebpay(monto, buyOrder, sessionId, returnUrl);
-      if (resp.url && resp.token) {
-        window.location.href = `${resp.url}?token_ws=${resp.token}`;
+      
+      // ✅ USAR DIRECTAMENTE LA RESPUESTA DEL CHECKOUT
+      if (response.urlPago && response.codigoPago) {
+        console.log('Redirigiendo a Webpay:', response.urlPago);
+        window.location.href = `${response.urlPago}?token_ws=${response.codigoPago}`;
       } else {
         setNotification({
           isOpen: true,
           type: 'error',
           title: 'Error',
-          message: 'No se pudo iniciar el pago con Webpay.'
+          message: 'No se pudo obtener la URL de pago de Webpay.'
         });
       }
-    } catch (err) {
+    } catch (err: any) {
+      const errorMessage = err.response?.data || 'No se pudo iniciar el pago con Webpay.';
       setNotification({
         isOpen: true,
         type: 'error',
         title: 'Error',
-        message: 'No se pudo iniciar el pago con Webpay.'
+        message: errorMessage
       });
     } finally {
       setPagarLoading(false);
@@ -340,7 +343,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
       // Buscar productos de las categorías elegibles
       const categoriasElegibles = ['Herramientas Manuales', 'Herramientas Eléctricas', 'Jardinería'];
       let descuento = 0;
-      if (usarApi) {
+      if (isAuthenticated && user) {
         descuento = items
           .filter(item => {
             const prod = productos.find(p => p.id === item.productoId);
@@ -386,7 +389,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
 
   // Escuchar evento personalizado para recargar carrito anónimo
   useEffect(() => {
-    if (!usarApi) {
+    if (!isAuthenticated) {
       const handler = () => {
         const data = localStorage.getItem(LOCAL_STORAGE_KEY);
         setCarrito(data ? JSON.parse(data) : []);
@@ -394,14 +397,14 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
       window.addEventListener('carrito_anonimo_actualizado', handler);
       return () => window.removeEventListener('carrito_anonimo_actualizado', handler);
     }
-  }, [usarApi]);
+  }, [isAuthenticated]);
 
   // Depuración: mostrar el contenido del carrito local en consola
   useEffect(() => {
-    if (!usarApi) {
+    if (!isAuthenticated) {
       console.log('Carrito local renderizado:', carrito);
     }
-  }, [carrito, usarApi]);
+  }, [carrito, isAuthenticated]);
 
   // Cálculos para desglose de carrito anónimo
   const neto = Math.round(total / 1.19);
@@ -417,6 +420,12 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
 
   // Mostrar desglose solo si hay productos en el carrito o en el resumen
   const hayProductos = isAuthenticated ? items.length > 0 : carrito.length > 0;
+
+  // Depuración: mostrar el contenido de items antes de renderizar
+  console.log('DEBUG: items a renderizar:', items);
+  if (items && items.length > 0) {
+    console.log('DEBUG: primer item:', items[0]);
+  }
 
   // Depuración: mostrar el contenido de los estados clave antes del renderizado del desglose
   useEffect(() => {
@@ -462,7 +471,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     return (
       <div className="max-w-4xl mx-auto my-8 bg-white rounded-lg p-6 shadow-md">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-ferremas-primary">
+          <h2 className="text-2xl font-bold text-ferremas-primary text-center w-full">
             🛒 Carrito de Compras
           </h2>
         </div>
@@ -476,7 +485,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
               Reintentar
             </button>
           </div>
-        ) : (usarApi ? items.length === 0 : carrito.length === 0) ? (
+        ) : (isAuthenticated ? items.length === 0 : carrito.length === 0) ? (
           <div className="text-center py-8">
             <p className="text-gray-500 mb-4">Tu carrito está vacío</p>
             <button 
@@ -488,92 +497,96 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
           </div>
         ) : (
           <>
-            {/* Lista de items */}
-            <div className="space-y-4 mb-6">
-              {(usarApi ? items : carrito).map(item => (
-                <div key={item.id} className="flex items-center p-4 border rounded-lg">
-                  <img
-                    src={
-                      usarApi
-                        ? ((item as CarritoItemDTO).productoImagen || '/placeholder.png')
-                        : ((item as CarritoItem).imagenUrl?.startsWith('http')
-                            ? (item as CarritoItem).imagenUrl
-                            : `http://localhost:5200${(item as CarritoItem).imagenUrl}`) || '/placeholder.png'
-                    }
-                    alt={usarApi ? (item as CarritoItemDTO).productoNombre : (item as CarritoItem).nombre}
-                    className="w-16 h-16 object-cover rounded mr-4"
-                  />
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-gray-900">{usarApi ? (item as CarritoItemDTO).productoNombre : (item as CarritoItem).nombre}</h3>
-                    {usarApi && (item as CarritoItemDTO).precioConDescuento != null && (item as CarritoItemDTO).precioOriginal != null && (item as CarritoItemDTO).precioConDescuento < (item as CarritoItemDTO).precioOriginal ? (
-                      <div className="text-gray-600">
-                        <span className="text-gray-400 line-through text-sm mr-2">
-                          ${(item as CarritoItemDTO).precioOriginal?.toLocaleString('es-CL')}
-                        </span>
-                        <span className="text-ferremas-primary font-semibold">
-                          ${(item as CarritoItemDTO).precioConDescuento?.toLocaleString('es-CL')}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-gray-600">${(usarApi ? (item as CarritoItemDTO).productoPrecio : (item as CarritoItem).precio).toLocaleString('es-CL')}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {usarApi ? (
-                      <>
-                        <button
-                          onClick={() => handleActualizarCantidad(item, item.cantidad - 1)}
-                          disabled={updatingItem === item.id || item.cantidad <= 1}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          -
-                        </button>
-                        <span className="w-12 text-center">{item.cantidad}</span>
-                        <button
-                          onClick={() => handleActualizarCantidad(item, item.cantidad + 1)}
-                          disabled={updatingItem === item.id}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          +
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleCantidad(item.id, item.cantidad - 1)}
-                          disabled={item.cantidad <= 1}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          -
-                        </button>
-                        <span className="w-12 text-center">{item.cantidad}</span>
-                        <button
-                          onClick={() => handleCantidad(item.id, item.cantidad + 1)}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          +
-                        </button>
-                      </>
-                    )}
-                  </div>
-                  <div className="text-right ml-4">
-                    <p className="font-semibold">${(usarApi ? (item as CarritoItemDTO).subtotal : (item as CarritoItem).precio * (item as CarritoItem).cantidad).toLocaleString('es-CL')}</p>
-                    <button
-                      onClick={() => {
-                        if (usarApi) {
-                          handleEliminarItem(item);
-                        } else {
-                          handleEliminar(item.id);
-                        }
-                      }}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
+            {/* Depuración visual y lista de productos autenticados */}
+            {items.length > 0 && (
+              <>
+                <div style={{ color: 'red', fontWeight: 'bold', fontSize: '18px' }}>
+                  [DEBUG] Bloque de productos autenticados renderizado
                 </div>
-              ))}
-            </div>
+                <div className="space-y-4 mb-6">
+                  {items.map(item => (
+                    <div key={item.id} className="flex items-center p-4 border rounded-lg" style={{ background: '#ffeaea', border: '2px solid red' }}>
+                      PROD
+                      <img
+                        src={item.productoImagen || '/placeholder.png'}
+                        alt={item.productoNombre}
+                        className="w-16 h-16 object-cover rounded mr-4"
+                      />
+                      <div className="flex-grow">
+                        <h3 className="font-semibold text-gray-900">{item.productoNombre}</h3>
+                        <p className="text-gray-600">${item.productoPrecio?.toLocaleString('es-CL')}</p>
+                        <span className="text-sm text-gray-500">Cantidad: {item.cantidad}</span>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="font-semibold">${(item.productoPrecio * item.cantidad)?.toLocaleString('es-CL')}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {/* Renderizado de productos del carrito anónimo (no autenticado) */}
+            {!isAuthenticated && carrito.length > 0 && (
+              <>
+                <div className="space-y-4 mb-6">
+                  {carrito.map((item, idx) => (
+                    <div key={item.id} className="flex items-center p-4 border rounded-lg bg-green-50 border-green-400">
+                      <img
+                        src={item.imagenUrl && !item.imagenUrl.startsWith('http') ? `${API_BASE_URL}${item.imagenUrl}` : item.imagenUrl || '/placeholder.png'}
+                        alt={item.nombre}
+                        className="w-16 h-16 object-cover rounded mr-4 border"
+                      />
+                      <div className="flex-grow">
+                        <h3 className="font-semibold text-gray-900">{item.nombre}</h3>
+                        <p className="text-gray-600">${item.precio?.toLocaleString('es-CL')}</p>
+                        <div className="flex items-center mt-1">
+                          <button
+                            className="px-2 py-1 bg-gray-200 rounded-l hover:bg-gray-300"
+                            onClick={() => {
+                              const nuevaCantidad = Math.max(1, item.cantidad - 1);
+                              setCarrito(prev => prev.map((it, i) => i === idx ? { ...it, cantidad: nuevaCantidad } : it));
+                              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(carrito.map((it, i) => i === idx ? { ...it, cantidad: nuevaCantidad } : it)));
+                            }}
+                            disabled={item.cantidad <= 1}
+                          >-</button>
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.cantidad}
+                            onChange={e => {
+                              const val = Math.max(1, parseInt(e.target.value) || 1);
+                              setCarrito(prev => prev.map((it, i) => i === idx ? { ...it, cantidad: val } : it));
+                              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(carrito.map((it, i) => i === idx ? { ...it, cantidad: val } : it)));
+                            }}
+                            className="w-12 text-center border mx-1 rounded"
+                          />
+                          <button
+                            className="px-2 py-1 bg-gray-200 rounded-r hover:bg-gray-300"
+                            onClick={() => {
+                              const nuevaCantidad = item.cantidad + 1;
+                              setCarrito(prev => prev.map((it, i) => i === idx ? { ...it, cantidad: nuevaCantidad } : it));
+                              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(carrito.map((it, i) => i === idx ? { ...it, cantidad: nuevaCantidad } : it)));
+                            }}
+                          >+</button>
+                        </div>
+                        <span className="text-sm text-gray-500">Cantidad: {item.cantidad}</span>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="font-semibold">${(item.precio * item.cantidad)?.toLocaleString('es-CL')}</p>
+                        <button
+                          className="ml-2 text-red-500 hover:text-red-700 text-xs underline"
+                          onClick={() => {
+                            const nuevoCarrito = carrito.filter((_, i) => i !== idx);
+                            setCarrito(nuevoCarrito);
+                            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(nuevoCarrito));
+                          }}
+                        >Eliminar</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* Campo para código de descuento */}
             <div className="mb-4">
@@ -734,7 +747,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                 <div>Total a pagar: <span className="font-bold text-lg">${resumen.total?.toLocaleString('es-CL') ?? 0}</span></div>
               </div>
             )}
-            {((usarApi ? items.length > 0 : carrito.length > 0)) && (
+            {((isAuthenticated ? items.length > 0 : carrito.length > 0)) && (
               <button
                 className="btn-primary w-full mt-2"
                 onClick={handlePagar}
@@ -757,7 +770,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
           }
           message={
             confirmDialog.action === 'delete'
-              ? `¿Estás seguro de que quieres eliminar "${usarApi ? (confirmDialog.item as CarritoItemDTO)?.productoNombre : (confirmDialog.item as CarritoItem)?.nombre}" del carrito?`
+              ? `¿Estás seguro de que quieres eliminar "${isAuthenticated ? (confirmDialog.item as CarritoItemDTO)?.productoNombre : (confirmDialog.item as CarritoItem)?.nombre}" del carrito?`
               : '¿Estás seguro de que quieres limpiar todo el carrito?'
           }
         />
@@ -773,326 +786,48 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     );
   }
 
-  // Modal (comportamiento anterior)
+  // ÚNICO RETURN PRINCIPAL:
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-ferremas-primary">
-            🛒 Carrito de Compras
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
-          >
-            ✕
-          </button>
-        </div>
-        {error ? (
-          <div className="text-center py-8">
-            <p className="text-red-500">{error}</p>
-            <button 
-              onClick={fetchCarrito}
-              className="btn-primary mt-4"
-            >
-              Reintentar
-            </button>
-          </div>
-        ) : (usarApi ? items.length === 0 : carrito.length === 0) ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">Tu carrito está vacío</p>
-            <button 
-              onClick={() => {}}
-              className="btn-primary"
-            >
-              Continuar comprando
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Lista de items */}
-            <div className="space-y-4 mb-6">
-              {(usarApi ? items : carrito).map(item => (
-                <div key={item.id} className="flex items-center p-4 border rounded-lg">
-                  <img
-                    src={
-                      usarApi
-                        ? ((item as CarritoItemDTO).productoImagen || '/placeholder.png')
-                        : ((item as CarritoItem).imagenUrl?.startsWith('http')
-                            ? (item as CarritoItem).imagenUrl
-                            : `http://localhost:5200${(item as CarritoItem).imagenUrl}`) || '/placeholder.png'
-                    }
-                    alt={usarApi ? (item as CarritoItemDTO).productoNombre : (item as CarritoItem).nombre}
-                    className="w-16 h-16 object-cover rounded mr-4"
-                  />
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-gray-900">{usarApi ? (item as CarritoItemDTO).productoNombre : (item as CarritoItem).nombre}</h3>
-                    {usarApi && (item as CarritoItemDTO).precioConDescuento != null && (item as CarritoItemDTO).precioOriginal != null && (item as CarritoItemDTO).precioConDescuento < (item as CarritoItemDTO).precioOriginal ? (
-                      <div className="text-gray-600">
-                        <span className="text-gray-400 line-through text-sm mr-2">
-                          ${(item as CarritoItemDTO).precioOriginal?.toLocaleString('es-CL')}
-                        </span>
-                        <span className="text-ferremas-primary font-semibold">
-                          ${(item as CarritoItemDTO).precioConDescuento?.toLocaleString('es-CL')}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-gray-600">${(usarApi ? (item as CarritoItemDTO).productoPrecio : (item as CarritoItem).precio).toLocaleString('es-CL')}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {usarApi ? (
-                      <>
-                        <button
-                          onClick={() => handleActualizarCantidad(item, item.cantidad - 1)}
-                          disabled={updatingItem === item.id || item.cantidad <= 1}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          -
-                        </button>
-                        <span className="w-12 text-center">{item.cantidad}</span>
-                        <button
-                          onClick={() => handleActualizarCantidad(item, item.cantidad + 1)}
-                          disabled={updatingItem === item.id}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          +
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleCantidad(item.id, item.cantidad - 1)}
-                          disabled={item.cantidad <= 1}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          -
-                        </button>
-                        <span className="w-12 text-center">{item.cantidad}</span>
-                        <button
-                          onClick={() => handleCantidad(item.id, item.cantidad + 1)}
-                          className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        >
-                          +
-                        </button>
-                      </>
-                    )}
-                  </div>
-                  <div className="text-right ml-4">
-                    <p className="font-semibold">${(usarApi ? (item as CarritoItemDTO).subtotal : (item as CarritoItem).precio * (item as CarritoItem).cantidad).toLocaleString('es-CL')}</p>
-                    <button
-                      onClick={() => {
-                        if (usarApi) {
-                          handleEliminarItem(item);
-                        } else {
-                          handleEliminar(item.id);
-                        }
-                      }}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Campo para código de descuento */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Código de descuento</label>
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={codigoDescuento}
-                  onChange={e => setCodigoDescuento(e.target.value)}
-                  placeholder="Ingresa tu código"
-                  className="input-field focus-ring"
-                />
-                <button
-                  onClick={aplicarDescuento}
-                  className="bg-ferremas-primary text-white px-4 py-2 rounded hover:bg-ferremas-primary-dark"
-                >
-                  Aplicar
-                </button>
-              </div>
-              {mensajeDescuento && (
-                <div className={`mt-2 text-sm ${descuentoAplicado ? 'text-green-600' : 'text-red-500'}`}>{mensajeDescuento}</div>
-              )}
-            </div>
-
-            {/* Desglose */}
-            {!isAuthenticated && carrito.length > 0 && (
-              <div className="border-t pt-4 mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span>Subtotal (Neto):</span>
-                  <span>${neto.toLocaleString('es-CL')}</span>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span>IVA (19%):</span>
-                  <span>${iva.toLocaleString('es-CL')}</span>
-                </div>
-                <div className="flex justify-between items-center font-bold text-lg">
-                  <span>Total:</span>
-                  <span>${total.toLocaleString('es-CL')}</span>
-                </div>
-              </div>
-            )}
-            {isAuthenticated && items.length > 0 && resumen && (
-              <div className="border-t pt-4 mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span>Subtotal (Neto):</span>
-                  <span>${resumen.subtotal.toLocaleString('es-CL')}</span>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span>IVA (19%):</span>
-                  <span>${(resumen.total - resumen.subtotal).toLocaleString('es-CL')}</span>
-                </div>
-                <div className="flex justify-between items-center font-bold text-lg">
-                  <span>Total:</span>
-                  <span>${resumen.total.toLocaleString('es-CL')}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Formulario de envío */}
-            <div className="mb-4 p-4 border rounded-lg bg-gray-50">
-              <h4 className="font-bold mb-2">Datos de Envío</h4>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">RUT <span className="text-red-500">*</span></label>
-                <input type="text" value={rutEnvio} onChange={e => setRutEnvio(e.target.value)} className="input-field focus-ring w-full" required />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Correo <span className="text-red-500">*</span></label>
-                <input type="email" value={correoEnvio} onChange={e => setCorreoEnvio(e.target.value)} className="input-field focus-ring w-full" required />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
-                <input type="text" value={nombreEnvio} onChange={e => setNombreEnvio(e.target.value)} className="input-field focus-ring w-full" />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                <input type="text" value={direccionEnvio} onChange={e => setDireccionEnvio(e.target.value)} className="input-field focus-ring w-full" />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
-                <input type="text" value={ciudadEnvio} onChange={e => setCiudadEnvio(e.target.value)} className="input-field focus-ring w-full" />
-              </div>
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Método de envío</label>
-                <select value={metodoEnvio} onChange={e => setMetodoEnvio(e.target.value)} className="input-field focus-ring w-full">
-                  <option value="">Selecciona un método</option>
-                  <option value="Chilexpress">Chilexpress</option>
-                  <option value="Starken">Starken</option>
-                </select>
-              </div>
-              {costoEnvio > 0 && (
-                <div className="text-sm text-gray-700 mt-2">Costo de envío: <span className="font-bold">${costoEnvio.toLocaleString('es-CL')}</span></div>
-              )}
-            </div>
-
-            {/* Resumen */}
-            {resumen && (
-              <div className="border-t pt-4 mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span>Subtotal:</span>
-                  <span>${resumen.subtotal?.toLocaleString('es-CL') || '0'}</span>
-                </div>
-                {descuentoAplicado && (
-                  <div className="flex justify-between items-center mb-2 text-green-600">
-                    <span>Descuento aplicado:</span>
-                    <span>- ${montoDescuento.toLocaleString('es-CL')}</span>
-                  </div>
-                )}
-                {costoEnvio > 0 && (
-                  <div className="flex justify-between items-center mb-2 text-blue-600">
-                    <span>Envío ({metodoEnvio}):</span>
-                    <span>+ ${costoEnvio.toLocaleString('es-CL')}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center font-bold text-lg">
-                  <span>Total:</span>
-                  <span>${(resumen.total - (descuentoAplicado ? montoDescuento : 0) + costoEnvio).toLocaleString('es-CL') || '0'}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Desglose para ambos tipos de usuario */}
-            {hayProductos ? (
-              <div className="border-t pt-4 mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span>Subtotal (Neto):</span>
-                  <span>${(isAuthenticated ? resumenNeto : (descuentoAplicado ? netoConDescuento : neto)).toLocaleString('es-CL')}</span>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span>IVA (19%):</span>
-                  <span>${(isAuthenticated ? resumenIva : (descuentoAplicado ? ivaConDescuento : iva)).toLocaleString('es-CL')}</span>
-                </div>
-                {descuentoAplicado && (
-                  <div className="flex justify-between items-center mb-2 text-green-600">
-                    <span>Descuento aplicado:</span>
-                    <span>- ${montoDescuento.toLocaleString('es-CL')}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center font-bold text-lg">
-                  <span>Total:</span>
-                  <span>${(isAuthenticated ? resumenTotal : totalConDescuento).toLocaleString('es-CL')}</span>
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center font-bold text-lg border-t pt-4 mb-6">
-                <span>Total:</span>
-                <span>$0</span>
-              </div>
-            )}
-
-            {/* Acciones */}
-            <div className="flex justify-between items-center mb-4">
-              <button onClick={isAuthenticated ? handleLimpiarCarrito : handleLimpiar} className="text-sm text-red-500 hover:underline">Vaciar carrito</button>
-              <div className="text-xl font-bold">Total: ${isAuthenticated ? (resumen?.total || 0).toLocaleString() : total.toLocaleString()}</div>
-            </div>
-            {/* Solo mostrar resumen y costo de envío si autenticado */}
-            {isAuthenticated && resumen && (
-              <div className="mb-4 text-sm text-gray-600">
-                <div>Total a pagar: <span className="font-bold text-lg">${resumen.total?.toLocaleString('es-CL') ?? 0}</span></div>
-              </div>
-            )}
-            {((usarApi ? items.length > 0 : carrito.length > 0)) && (
-              <button
-                className="btn-primary w-full mt-2"
-                onClick={handlePagar}
-                disabled={pagarLoading}
-              >
-                {pagarLoading ? 'Redirigiendo...' : 'Pagar con Webpay'}
-              </button>
-            )}
-          </>
-        )}
-        {/* Diálogo de confirmación */}
-        <ConfirmDialog
-          isOpen={confirmDialog.isOpen}
-          onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
-          onConfirm={handleConfirmAction}
-          title={
-            confirmDialog.action === 'delete' 
-              ? 'Eliminar producto' 
-              : 'Limpiar carrito'
-          }
-          message={
-            confirmDialog.action === 'delete'
-              ? `¿Estás seguro de que quieres eliminar "${usarApi ? (confirmDialog.item as CarritoItemDTO)?.productoNombre : (confirmDialog.item as CarritoItem)?.nombre}" del carrito?`
-              : '¿Estás seguro de que quieres limpiar todo el carrito?'
-          }
-        />
-        {/* Notificaciones */}
-        <Notification
-          isOpen={notification.isOpen}
-          onClose={() => setNotification({ ...notification, isOpen: false })}
-          type={notification.type}
-          title={notification.title}
-          message={notification.message}
-        />
+    <>
+      <div style={{ color: 'purple', fontWeight: 'bold', fontSize: '22px', marginBottom: '10px' }}>
+        PRUEBA FUERA DEL MAPEO
       </div>
-    </div>
+      {/* Desglose y total (ejemplo) */}
+      <div style={{ background: 'orange', padding: 16, marginBottom: 16 }}>
+        <h2>DEBUG: DESGLOSE CARRITO (AUTENTICADO)</h2>
+        <div>Subtotal (Neto): ${resumen?.subtotal?.toLocaleString('es-CL') ?? 0}</div>
+        <div>IVA: ${(resumen ? (resumen.total - resumen.subtotal) : 0).toLocaleString('es-CL')}</div>
+        <div>Total: ${resumen?.total?.toLocaleString('es-CL') ?? 0}</div>
+      </div>
+      {/* Lista de productos autenticados */}
+      {items.length > 0 && (
+        <>
+          <div style={{ color: 'red', fontWeight: 'bold', fontSize: '18px' }}>
+            [DEBUG] Bloque de productos autenticados renderizado
+          </div>
+          <div className="space-y-4 mb-6">
+            {items.map(item => (
+              <div key={item.id} className="flex items-center p-4 border rounded-lg" style={{ background: '#ffeaea', border: '2px solid red' }}>
+                PROD
+                <img
+                  src={item.productoImagen || '/placeholder.png'}
+                  alt={item.productoNombre}
+                  className="w-16 h-16 object-cover rounded mr-4"
+                />
+                <div className="flex-grow">
+                  <h3 className="font-semibold text-gray-900">{item.productoNombre}</h3>
+                  <p className="text-gray-600">${item.productoPrecio?.toLocaleString('es-CL')}</p>
+                  <span className="text-sm text-gray-500">Cantidad: {item.cantidad}</span>
+                </div>
+                <div className="text-right ml-4">
+                  <p className="font-semibold">${(item.productoPrecio * item.cantidad)?.toLocaleString('es-CL')}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </>
   );
 };
 
