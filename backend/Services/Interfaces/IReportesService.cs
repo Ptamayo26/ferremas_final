@@ -10,5 +10,6 @@ namespace Ferremas.Api.Services.Interfaces
         Task<List<ProductoVentaDTO>> ObtenerTopProductosVendidos(int cantidad);
         Task<Dictionary<string, int>> ObtenerPedidosPorCliente();
         Task<List<ProductoDTO>> ObtenerProductosBajoStock();
+        Task<(decimal valorInventario, int productosEnStock)> ObtenerValorInventarioAsync();
     }
 } 

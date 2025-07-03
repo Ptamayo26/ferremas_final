@@ -63,11 +63,11 @@ namespace Ferremas.Api.Controllers
         public async Task<ActionResult<object>> GetDashboardInventario()
         {
             var productosBajoStock = await _reportesService.ObtenerProductosBajoStock();
-            
+            var (valorTotal, totalProductos) = await _reportesService.ObtenerValorInventarioAsync();
             return Ok(new
             {
-                valorTotal = 0, // TODO: Implementar cálculo de valor total
-                totalProductos = 0, // TODO: Implementar contador de productos
+                valorTotal = valorTotal,
+                totalProductos = totalProductos,
                 productosAgotados = productosBajoStock.Count(p => p.Stock == 0),
                 productosBajoStock = productosBajoStock
             });

@@ -77,5 +77,13 @@ namespace Ferremas.Api.Services
                 .ToListAsync();
             return productos;
         }
+
+        public async Task<(decimal valorInventario, int productosEnStock)> ObtenerValorInventarioAsync()
+        {
+            var productos = await _context.Productos.Where(p => p.Activo).ToListAsync();
+            decimal valorInventario = productos.Sum(p => p.Precio * p.Stock);
+            int productosEnStock = productos.Sum(p => p.Stock);
+            return (valorInventario, productosEnStock);
+        }
     }
 } 
