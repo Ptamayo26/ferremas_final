@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
 import type { ReporteVentas, ReporteInventario, UsuarioResponseDTO, ProductoResponseDTO } from '../types/api';
 import GestionUsuarios from '../components/admin/GestionUsuarios';
+import CatalogoProductosAdmin from '../components/admin/productos/CatalogoProductosAdmin';
 
-type AdminViewSection = 'dashboard' | 'users';
+type AdminViewSection = 'dashboard' | 'users' | 'catalogo';
 
 const AdminView: React.FC = () => {
   const [activeSection, setActiveSection] = useState<AdminViewSection>('dashboard');
@@ -89,6 +90,8 @@ const AdminView: React.FC = () => {
     switch (activeSection) {
       case 'users':
         return <GestionUsuarios />;
+      case 'catalogo':
+        return <CatalogoProductosAdmin />;
       case 'dashboard':
       default:
         return (
@@ -276,31 +279,27 @@ const AdminView: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <header className="mb-8 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-ferremas-primary">Panel de Administración</h1>
-        <nav className="flex space-x-2">
-          <button
-            onClick={() => setActiveSection('dashboard')}
-            className={`btn-secondary ${activeSection === 'dashboard' ? 'bg-ferremas-orange-100' : ''}`}
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActiveSection('users')}
-            className={`btn-secondary ${activeSection === 'users' ? 'bg-ferremas-orange-100' : ''}`}
-          >
-            Gestionar Usuarios
-          </button>
-          <button
-            onClick={() => window.location.href = '/catalogo'}
-            className="btn-primary"
-          >
-            Ir al Catálogo
-          </button>
-        </nav>
-      </header>
-
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="mb-6 flex gap-4">
+        <button
+          className={`px-4 py-2 rounded ${activeSection === 'dashboard' ? 'bg-blue-600 text-white' : 'bg-white border text-gray-700'}`}
+          onClick={() => setActiveSection('dashboard')}
+        >
+          Dashboard
+        </button>
+        <button
+          className={`px-4 py-2 rounded ${activeSection === 'users' ? 'bg-blue-600 text-white' : 'bg-white border text-gray-700'}`}
+          onClick={() => setActiveSection('users')}
+        >
+          Usuarios
+        </button>
+        <button
+          className={`px-4 py-2 rounded ${activeSection === 'catalogo' ? 'bg-blue-600 text-white' : 'bg-white border text-gray-700'}`}
+          onClick={() => setActiveSection('catalogo')}
+        >
+          Catálogo de Productos
+        </button>
+      </div>
       {renderContent()}
     </div>
   );
