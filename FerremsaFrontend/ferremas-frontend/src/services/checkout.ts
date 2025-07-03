@@ -31,5 +31,16 @@ export const checkoutService = {
     const response = await fetch(`/api/Descuentos/codigo/${codigo}`);
     if (!response.ok) throw new Error('Código de descuento inválido');
     return await response.json();
+  },
+
+  // Validar código de descuento para carrito anónimo
+  async validarCodigoDescuentoAnonimo(codigo: string, productos: any[]) {
+    const response = await fetch('/api/Descuentos/validar-anonimo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo, productos }),
+    });
+    if (!response.ok) throw new Error('Código de descuento inválido o expirado');
+    return await response.json();
   }
 }; 

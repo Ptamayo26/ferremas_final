@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { checkoutService } from '../../services/checkout';
+import { enviosService } from '../../services/envios';
 import { API_BASE_URL } from '../../constants/api';
 import type { CarritoItemDTO, CarritoResumenDTO } from '../../types/api';
 import { useAuth } from '../../context/AuthContext';
@@ -21,6 +22,10 @@ const CarritoAutenticado: React.FC = () => {
   const [metodoEnvio, setMetodoEnvio] = useState('');
   const [costoEnvio, setCostoEnvio] = useState(0);
   const [erroresEnvio, setErroresEnvio] = useState<string[]>([]);
+  // Estado para descuento
+  const [codigoDescuento, setCodigoDescuento] = useState('');
+  const [descuentoInfo, setDescuentoInfo] = useState<{tipo: string, valor: number} | null>(null);
+  const [descuentoError, setDescuentoError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCarrito = async () => {
@@ -40,9 +45,8 @@ const CarritoAutenticado: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (metodoEnvio === 'Chilexpress') setCostoEnvio(4990);
-    else if (metodoEnvio === 'Starken') setCostoEnvio(3990);
-    else setCostoEnvio(0);
+    const costo = enviosService.obtenerCostoEnvio(metodoEnvio);
+    setCostoEnvio(costo);
   }, [metodoEnvio]);
 
   const handleActualizarCantidad = async (item: CarritoItemDTO, nuevaCantidad: number) => {
@@ -101,7 +105,9 @@ const CarritoAutenticado: React.FC = () => {
         region: '',
         codigoPostal: '',
         rut: rutEnvio,
-        correo: correoEnvio
+        correo: correoEnvio,
+        metodoEnvio: metodoEnvio,
+        costoEnvio: costoEnvio
       };
       const response = await checkoutService.procesarCheckout(checkoutData);
       
@@ -119,6 +125,52 @@ const CarritoAutenticado: React.FC = () => {
       setPagarLoading(false);
     }
   };
+
+  // Calcular subtotal, IVA y total usando precioConDescuento
+  const subtotalConDescuento = items.reduce((sum, item) => sum + ((item.precioConDescuento ?? item.productoPrecio) * item.cantidad), 0);
+  const ivaConDescuento = Math.round(subtotalConDescuento * 0.19);
+  const totalConDescuento = subtotalConDescuento + ivaConDescuento;
+
+  // Validar el cupón contra el backend
+  const validarDescuento = async () => {
+    setDescuentoError(null);
+    setDescuentoInfo(null);
+    if (!codigoDescuento) {
+      setDescuentoError('Ingrese un código de descuento');
+      return;
+    }
+    try {
+      // En autenticado, enviar productos del carrito
+      const productosParaValidar = items.map(item => ({
+        id: item.id,
+        productoId: item.productoId,
+        productoNombre: item.productoNombre,
+        productoPrecio: item.productoPrecio,
+        cantidad: item.cantidad
+      }));
+      const data = await checkoutService.validarCodigoDescuentoAnonimo(codigoDescuento, productosParaValidar);
+      setDescuentoInfo({ tipo: data.tipo, valor: data.valor });
+    } catch (err) {
+      setDescuentoError('Código de descuento inválido o expirado');
+    }
+  };
+  const quitarDescuento = () => {
+    setCodigoDescuento('');
+    setDescuentoInfo(null);
+    setDescuentoError(null);
+  };
+  // Calcular descuento real basado en el tipo de cupón
+  const calcularDescuentoReal = () => {
+    if (!descuentoInfo) return 0;
+    const subtotal = subtotalConDescuento;
+    if (descuentoInfo.tipo === 'porcentaje') {
+      return Math.round(subtotal * (descuentoInfo.valor / 100));
+    } else if (descuentoInfo.tipo === 'monto') {
+      return Math.min(descuentoInfo.valor, subtotal);
+    }
+    return 0;
+  };
+  const descuentoReal = calcularDescuentoReal();
 
   if (loading) return <div>Cargando carrito autenticado...</div>;
   return (
@@ -151,7 +203,12 @@ const CarritoAutenticado: React.FC = () => {
                 />
                 <div className="flex-grow">
                   <h3 className="font-semibold text-gray-900">{item.productoNombre}</h3>
-                  <p className="text-gray-600">${item.productoPrecio?.toLocaleString('es-CL')}</p>
+                  <p className="text-gray-600">
+                    ${item.precioConDescuento?.toLocaleString('es-CL') ?? item.productoPrecio?.toLocaleString('es-CL')}
+                    {item.precioConDescuento && item.precioConDescuento < item.productoPrecio && (
+                      <span className="line-through text-red-400 ml-2 text-sm">${item.productoPrecio?.toLocaleString('es-CL')}</span>
+                    )}
+                  </p>
                   <div className="flex items-center mt-1">
                     <button
                       className="px-2 py-1 bg-gray-200 rounded-l hover:bg-gray-300"
@@ -176,7 +233,7 @@ const CarritoAutenticado: React.FC = () => {
                   <span className="text-sm text-gray-500">Cantidad: {item.cantidad}</span>
                 </div>
                 <div className="text-right ml-4">
-                  <p className="font-semibold">${(item.productoPrecio * item.cantidad)?.toLocaleString('es-CL')}</p>
+                  <p className="font-semibold">${((item.precioConDescuento ?? item.productoPrecio) * item.cantidad)?.toLocaleString('es-CL')}</p>
                   <button
                     className="ml-2 text-red-500 hover:text-red-700 text-xs underline"
                     onClick={() => handleEliminar(item)}
@@ -185,20 +242,46 @@ const CarritoAutenticado: React.FC = () => {
               </div>
             ))}
           </div>
-          {/* Desglose */}
-          <div className="border-t pt-4 mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <span>Subtotal (Neto):</span>
-              <span>${resumen?.subtotal?.toLocaleString('es-CL') ?? 0}</span>
+          {/* Campo para código de descuento */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Código de descuento</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="input input-bordered w-48"
+                value={codigoDescuento}
+                onChange={e => setCodigoDescuento(e.target.value)}
+                placeholder="Ingresa tu código"
+                disabled={!!descuentoInfo}
+              />
+              {!descuentoInfo ? (
+                <button
+                  className="btn btn-secondary"
+                  onClick={validarDescuento}
+                  type="button"
+                >
+                  Validar
+                </button>
+              ) : (
+                <button
+                  className="btn btn-danger"
+                  onClick={quitarDescuento}
+                  type="button"
+                >
+                  Quitar
+                </button>
+              )}
             </div>
-            <div className="flex justify-between items-center mb-2">
-              <span>IVA (19%):</span>
-              <span>${(resumen ? (resumen.total - resumen.subtotal) : 0).toLocaleString('es-CL')}</span>
-            </div>
-            <div className="flex justify-between items-center font-bold text-lg">
-              <span>Total:</span>
-              <span>${resumen?.total?.toLocaleString('es-CL') ?? 0}</span>
-            </div>
+            {descuentoInfo && (
+              <div className="text-green-600 text-sm mt-1">
+                ¡{descuentoInfo.tipo === 'porcentaje' ? `${descuentoInfo.valor}% de descuento aplicado!` : `$${descuentoInfo.valor} de descuento aplicado!`}
+                <br />
+                <span className="font-bold">Descuento: -${descuentoReal.toLocaleString('es-CL')}</span>
+              </div>
+            )}
+            {descuentoError && (
+              <div className="text-red-500 text-sm mt-1">{descuentoError}</div>
+            )}
           </div>
           {/* Formulario de envío */}
           <div className="mb-4 p-4 border rounded-lg bg-gray-50">
@@ -229,6 +312,7 @@ const CarritoAutenticado: React.FC = () => {
                 <option value="">Selecciona un método</option>
                 <option value="Chilexpress">Chilexpress</option>
                 <option value="Starken">Starken</option>
+                <option value="Shipit">Shipit</option>
               </select>
             </div>
             {costoEnvio > 0 && (
@@ -238,10 +322,30 @@ const CarritoAutenticado: React.FC = () => {
               <div className="text-red-500 text-sm mt-2">{erroresEnvio.join(' | ')}</div>
             )}
           </div>
+          {/* Desglose de totales MOVIDO ABAJO DEL FORM */}
+          <div className="border-t pt-4 mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span>Subtotal (Neto):</span>
+              <span>${subtotalConDescuento.toLocaleString('es-CL')}</span>
+            </div>
+            {descuentoInfo && (
+              <div className="flex justify-between items-center mb-2 text-green-600">
+                <span>Descuento aplicado:</span>
+                <span>- ${descuentoReal.toLocaleString('es-CL')}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center mb-2">
+              <span>IVA (19%):</span>
+              <span>${ivaConDescuento.toLocaleString('es-CL')}</span>
+            </div>
+            <div className="flex justify-between items-center font-bold text-lg">
+              <span>Total:</span>
+              <span>${(totalConDescuento - descuentoReal).toLocaleString('es-CL')}</span>
+            </div>
+          </div>
           {/* Acciones */}
           <div className="flex justify-between items-center mb-4">
             <button onClick={handleLimpiarCarrito} className="text-sm text-red-500 hover:underline">Vaciar carrito</button>
-            <div className="text-xl font-bold">Total: ${(resumen?.total || 0).toLocaleString('es-CL')}</div>
           </div>
           <button
             className="btn-primary w-full mt-2"

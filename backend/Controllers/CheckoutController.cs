@@ -71,7 +71,7 @@ namespace Ferremas.Api.Controllers
                 var subtotal = carritoItems.Sum(c => c.Subtotal);
                 var descuento = 0m; // Por ahora sin descuentos
                 var impuestos = subtotal * 0.19m; // IVA 19%
-                var envio = 0m; // Por ahora sin costo de envío
+                var envio = 0m; // Costo de envío se calculará en el frontend
                 var total = Math.Round(subtotal + impuestos + envio - descuento, 0); // Redondear a enteros para Webpay CLP
 
                 // Obtener dirección principal
@@ -264,7 +264,7 @@ namespace Ferremas.Api.Controllers
                     }
                 }
                 var impuestos = (subtotal - descuento) * 0.19m; // IVA 19% sobre el neto
-                var costoEnvio = 0m; // Por ahora sin costo de envío
+                var costoEnvio = dto.CostoEnvio ?? 0m; // Usar el costo de envío enviado desde el frontend
                 var total = Math.Round(subtotal - descuento + impuestos + costoEnvio, 0); // Redondear a enteros para Webpay CLP
 
                 // Crear el pedido

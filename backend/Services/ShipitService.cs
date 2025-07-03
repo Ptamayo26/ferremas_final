@@ -74,7 +74,7 @@ namespace Ferremas.Api.Services
                     is_payable = _defaultSettings.IsPayable,
                     packing = _defaultSettings.Packing,
                     shipping_type = _defaultSettings.ShippingType,
-                    destiny = _defaultSettings.Destiny,
+                    destiny_type = _defaultSettings.Destiny,
                     courier_for_client = _defaultSettings.CourierForClient
                 };
 

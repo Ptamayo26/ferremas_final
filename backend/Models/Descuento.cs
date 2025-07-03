@@ -10,9 +10,6 @@ namespace Ferremas.Api.Models
         public string Codigo { get; set; } = string.Empty;
 
         [Required]
-        public decimal Porcentaje { get; set; }
-
-        [Required]
         public string Tipo { get; set; } = "porcentaje"; // 'porcentaje' o 'monto'
 
         [Required]

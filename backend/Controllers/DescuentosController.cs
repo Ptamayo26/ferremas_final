@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System;
 
 namespace Ferremas.Api.Controllers
 {
@@ -74,6 +75,22 @@ namespace Ferremas.Api.Controllers
                 return NotFound();
 
             return NoContent();
+        }
+
+        [HttpPost("validar-anonimo")]
+        [AllowAnonymous]
+        public async Task<ActionResult<DescuentoResponseDTO>> ValidarDescuentoAnonimo([FromBody] ValidarDescuentoAnonimoDTO dto)
+        {
+            var codigo = dto.Codigo.Trim().ToUpper();
+            var descuento = await _descuentoService.ObtenerPorCodigo(codigo);
+            if (descuento == null || !descuento.Activo)
+                return BadRequest("Código de descuento inválido o expirado");
+            var ahora = DateTime.Now;
+            if (descuento.FechaInicio != null && descuento.FechaInicio > ahora)
+                return BadRequest("El cupón aún no está vigente");
+            if (descuento.FechaFin != null && descuento.FechaFin < ahora)
+                return BadRequest("El cupón ya expiró");
+            return Ok(descuento);
         }
     }
 } 

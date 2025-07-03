@@ -34,12 +34,11 @@ namespace Ferremas.Api.Services
 
         public async Task<DescuentoResponseDTO?> ObtenerPorCodigo(string codigo)
         {
+            var codigoNormalizado = codigo.Trim().ToUpper();
             var d = await _context.Descuentos
-                .FirstOrDefaultAsync(x => x.Codigo == codigo && x.Activo);
-
-            if (d == null || DateTime.Now < d.FechaInicio || DateTime.Now > d.FechaFin)
+                .FirstOrDefaultAsync(x => x.Codigo.ToUpper() == codigoNormalizado && x.Activo);
+            if (d == null)
                 return null;
-
             return new DescuentoResponseDTO
             {
                 Id = d.Id,

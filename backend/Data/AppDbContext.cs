@@ -299,7 +299,6 @@ namespace Ferremas.Api.Data
                 entity.ToTable("descuentos");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Codigo).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Porcentaje).HasColumnType("decimal(5,2)");
                 entity.Property(e => e.FechaInicio).IsRequired();
                 entity.Property(e => e.FechaFin).IsRequired();
                 entity.Property(e => e.Activo).IsRequired();

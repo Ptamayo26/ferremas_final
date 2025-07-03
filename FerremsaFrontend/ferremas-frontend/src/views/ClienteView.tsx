@@ -89,7 +89,7 @@ const ClienteView: React.FC = () => {
           ).length;
 
           const totalGastado = pedidosData
-            .filter((p: any) => p.estado === 'COMPLETADO')
+            .filter((p: any) => p.estado === 'COMPLETADO' || p.estado === 'PENDIENTE')
             .reduce((sum: number, p: any) => sum + (p.total || 0), 0);
 
           setStats({
@@ -422,32 +422,6 @@ const ClienteView: React.FC = () => {
               No tienes productos favoritos
             </div>
           )}
-        </div>
-      </section>
-
-      {/* Acciones Rápidas */}
-      <section className="card">
-        <h2 className="text-xl font-semibold text-ferremas-primary mb-4">
-          Acciones Rápidas
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 border border-ferremas-gray-200 rounded-lg hover:bg-ferremas-gray-50 transition-colors">
-            <div className="text-2xl mb-2">🛒</div>
-            <h3 className="font-semibold text-ferremas-primary">Ver Catálogo</h3>
-            <p className="text-sm text-ferremas-gray-600">Explora nuestros productos</p>
-          </button>
-          
-          <button className="p-4 border border-ferremas-gray-200 rounded-lg hover:bg-ferremas-gray-50 transition-colors">
-            <div className="text-2xl mb-2">📋</div>
-            <h3 className="font-semibold text-ferremas-primary">Mis Pedidos</h3>
-            <p className="text-sm text-ferremas-gray-600">Revisa el historial completo</p>
-          </button>
-          
-          <button className="p-4 border border-ferremas-gray-200 rounded-lg hover:bg-ferremas-gray-50 transition-colors">
-            <div className="text-2xl mb-2">⚙️</div>
-            <h3 className="font-semibold text-ferremas-primary">Configuración</h3>
-            <p className="text-sm text-ferremas-gray-600">Gestiona tu cuenta</p>
-          </button>
         </div>
       </section>
     </div>

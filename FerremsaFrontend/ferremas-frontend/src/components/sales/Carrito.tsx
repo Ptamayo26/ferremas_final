@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { enviosService } from '../../services/envios';
 import type { CarritoItemDTO, CarritoResumenDTO } from '../../types/api';
 import type { ProductoResponseDTO } from '../../types/api';
 import ConfirmDialog from '../ui/ConfirmDialog';
@@ -53,9 +54,8 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
 
   // Estados para descuento y envío
   const [codigoDescuento, setCodigoDescuento] = useState('');
-  const [descuentoAplicado, setDescuentoAplicado] = useState(false);
-  const [mensajeDescuento, setMensajeDescuento] = useState('');
-  const [montoDescuento, setMontoDescuento] = useState(0);
+  const [descuentoInfo, setDescuentoInfo] = useState<{tipo: string, valor: number} | null>(null);
+  const [descuentoError, setDescuentoError] = useState<string | null>(null);
 
   const [nombreEnvio, setNombreEnvio] = useState('');
   const [direccionEnvio, setDireccionEnvio] = useState('');
@@ -95,6 +95,12 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     // Obtener productos al cargar el carrito
     api.getProductos().then(setProductos);
   }, []);
+
+  // Calcular costo de envío cuando cambie el método
+  useEffect(() => {
+    const costo = enviosService.obtenerCostoEnvio(metodoEnvio);
+    setCostoEnvio(costo);
+  }, [metodoEnvio]);
 
   const fetchCarrito = async () => {
     if (!isAuthenticated) {
@@ -270,6 +276,53 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     }
   };
 
+  // Validar el cupón contra el backend
+  const validarDescuento = async () => {
+    setDescuentoError(null);
+    setDescuentoInfo(null);
+    if (!codigoDescuento) {
+      setDescuentoError('Ingrese un código de descuento');
+      return;
+    }
+    try {
+      // Siempre enviar productos del carrito, autenticado o no
+      const productosParaValidar = isAuthenticated ? items.map(item => ({
+        id: item.id,
+        productoId: item.productoId,
+        productoNombre: item.productoNombre,
+        productoPrecio: item.productoPrecio,
+        cantidad: item.cantidad
+      })) : carrito;
+      const data = await checkoutService.validarCodigoDescuentoAnonimo(codigoDescuento, productosParaValidar);
+      setDescuentoInfo({ tipo: data.tipo, valor: data.valor });
+    } catch (err) {
+      setDescuentoError('Código de descuento inválido o expirado');
+    }
+  };
+
+  const quitarDescuento = () => {
+    setCodigoDescuento('');
+    setDescuentoInfo(null);
+    setDescuentoError(null);
+  };
+
+  // Calcular descuento real basado en el tipo de cupón
+  const calcularDescuentoReal = () => {
+    if (!descuentoInfo) return 0;
+    
+    const subtotal = isAuthenticated ? (resumen?.subtotal || 0) : (carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0));
+    
+    if (descuentoInfo.tipo === 'porcentaje') {
+      return Math.round(subtotal * (descuentoInfo.valor / 100));
+    } else if (descuentoInfo.tipo === 'monto') {
+      return Math.min(descuentoInfo.valor, subtotal);
+    }
+    return 0;
+  };
+
+  const descuentoReal = calcularDescuentoReal();
+
+  // Modificar handlePagar para enviar el código de descuento real al backend
   const handlePagar = async () => {
     const nuevosErrores: string[] = [];
     if (!rutEnvio.trim()) nuevosErrores.push('El RUT es obligatorio.');
@@ -282,7 +335,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     try {
       const direccionManual = nombreEnvio || direccionEnvio || ciudadEnvio;
       const checkoutData = {
-        clienteId: user?.id ?? null, // Enviar null para usuarios anónimos
+        ...(user?.id ? { clienteId: user.id } : {}),
         direccionId: direccionManual ? 0 : 1,
         metodoPago: 'WEBPAY',
         observaciones: '',
@@ -294,6 +347,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
         codigoPostal: '',
         rut: rutEnvio,
         correo: correoEnvio,
+        codigoDescuento: descuentoInfo ? codigoDescuento : undefined,
         ...(user?.id ? {} : {
           items: carrito.map(item => ({
             id: item.id,
@@ -311,10 +365,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
       };
       console.log('Enviando checkoutData:', checkoutData);
       const response = await checkoutService.procesarCheckout(checkoutData);
-      
-      // ✅ USAR DIRECTAMENTE LA RESPUESTA DEL CHECKOUT
       if (response.urlPago && response.codigoPago) {
-        console.log('Redirigiendo a Webpay:', response.urlPago);
         window.location.href = `${response.urlPago}?token_ws=${response.codigoPago}`;
       } else {
         setNotification({
@@ -334,49 +385,6 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
       });
     } finally {
       setPagarLoading(false);
-    }
-  };
-
-  // Lógica para aplicar descuento
-  const aplicarDescuento = () => {
-    if (codigoDescuento.trim().toUpperCase() === 'OFERTA2X1') {
-      // Buscar productos de las categorías elegibles
-      const categoriasElegibles = ['Herramientas Manuales', 'Herramientas Eléctricas', 'Jardinería'];
-      let descuento = 0;
-      if (isAuthenticated && user) {
-        descuento = items
-          .filter(item => {
-            const prod = productos.find(p => p.id === item.productoId);
-            return prod && categoriasElegibles.includes(prod.categoriaNombre || '');
-          })
-          .reduce((acc, item) => {
-            const prod = productos.find(p => p.id === item.productoId);
-            return acc + (prod ? prod.precio : item.productoPrecio) * item.cantidad;
-          }, 0) * 0.5;
-      } else {
-        descuento = carrito
-          .filter(item => {
-            const prod = productos.find(p => p.id === item.id);
-            return prod && categoriasElegibles.includes(prod.categoriaNombre || '');
-          })
-          .reduce((acc, item) => {
-            const prod = productos.find(p => p.id === item.id);
-            return acc + (prod ? prod.precio : item.precio) * item.cantidad;
-          }, 0) * 0.5;
-      }
-      if (descuento > 0) {
-        setDescuentoAplicado(true);
-        setMontoDescuento(Math.round(descuento));
-        setMensajeDescuento('¡Descuento aplicado correctamente!');
-      } else {
-        setDescuentoAplicado(false);
-        setMontoDescuento(0);
-        setMensajeDescuento('No hay productos elegibles para el descuento.');
-      }
-    } else {
-      setDescuentoAplicado(false);
-      setMontoDescuento(0);
-      setMensajeDescuento('Código inválido.');
     }
   };
 
@@ -409,7 +417,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
   // Cálculos para desglose de carrito anónimo
   const neto = Math.round(total / 1.19);
   const iva = total - neto;
-  const totalConDescuento = total - (descuentoAplicado ? montoDescuento : 0);
+  const totalConDescuento = total - descuentoReal;
   const netoConDescuento = Math.round(totalConDescuento / 1.19);
   const ivaConDescuento = totalConDescuento - netoConDescuento;
 
@@ -452,17 +460,22 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     }
   }, [totalMostrado]);
 
-  // Bloque de depuración forzado para ver el desglose autenticado
-  if (isAuthenticated && items.length > 0 && resumen) {
-    return (
-      <div style={{ background: 'orange', padding: 20 }}>
-        <h2>DEBUG: DESGLOSE CARRITO (AUTENTICADO)</h2>
-        <div>Subtotal (Neto): ${resumen.subtotal}</div>
-        <div>IVA: ${resumen.total - resumen.subtotal}</div>
-        <div>Total: ${resumen.total}</div>
-      </div>
-    );
-  }
+  // Sincronizar props con estado local en modoPagina
+  useEffect(() => {
+    if (modoPagina && (typeof (window as any).carritoPagina !== 'undefined')) {
+      // Si tienes una variable global temporal para depuración
+      setItems((window as any).carritoPagina.items || []);
+      setCarrito((window as any).carritoPagina.carrito || []);
+    }
+    // Si recibes por props, descomenta y usa esto:
+    // if (modoPagina && props.items) setItems(props.items);
+    // if (modoPagina && props.carrito) setCarrito(props.carrito);
+  }, [modoPagina]);
+
+  // Cálculo de subtotal y totales para autenticados usando precioConDescuento
+  const subtotalAutenticado = items.reduce((sum, item) => sum + ((item.precioConDescuento ?? item.productoPrecio) * item.cantidad), 0);
+  const ivaAutenticado = subtotalAutenticado * 0.19;
+  const totalAutenticado = subtotalAutenticado + ivaAutenticado;
 
   if (loading) return <div>Cargando carrito...</div>;
 
@@ -474,6 +487,47 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
           <h2 className="text-2xl font-bold text-ferremas-primary text-center w-full">
             🛒 Carrito de Compras
           </h2>
+        </div>
+        {/* Campo para código de descuento SIEMPRE visible para ambos tipos de usuario */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Código de descuento</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              className="input input-bordered w-48"
+              value={codigoDescuento}
+              onChange={e => setCodigoDescuento(e.target.value)}
+              placeholder="Ingresa tu código"
+              disabled={!!descuentoInfo}
+            />
+            {!descuentoInfo ? (
+              <button
+                className="btn btn-secondary"
+                onClick={validarDescuento}
+                type="button"
+              >
+                Validar
+              </button>
+            ) : (
+              <button
+                className="btn btn-danger"
+                onClick={quitarDescuento}
+                type="button"
+              >
+                Quitar
+              </button>
+            )}
+          </div>
+          {descuentoInfo && (
+            <div className="text-green-600 text-sm mt-1">
+              ¡{descuentoInfo.tipo === 'porcentaje' ? `${descuentoInfo.valor}% de descuento aplicado!` : `$${descuentoInfo.valor} de descuento aplicado!`}
+              <br />
+              <span className="font-bold">Descuento: -${descuentoReal.toLocaleString('es-CL')}</span>
+            </div>
+          )}
+          {descuentoError && (
+            <div className="text-red-500 text-sm mt-1">{descuentoError}</div>
+          )}
         </div>
         {error ? (
           <div className="text-center py-8">
@@ -514,11 +568,11 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                       />
                       <div className="flex-grow">
                         <h3 className="font-semibold text-gray-900">{item.productoNombre}</h3>
-                        <p className="text-gray-600">${item.productoPrecio?.toLocaleString('es-CL')}</p>
+                        <p className="text-gray-600">${(item.precioConDescuento ?? item.productoPrecio)?.toLocaleString('es-CL')}</p>
                         <span className="text-sm text-gray-500">Cantidad: {item.cantidad}</span>
                       </div>
                       <div className="text-right ml-4">
-                        <p className="font-semibold">${(item.productoPrecio * item.cantidad)?.toLocaleString('es-CL')}</p>
+                        <p className="font-semibold">${((item.precioConDescuento ?? item.productoPrecio) * item.cantidad)?.toLocaleString('es-CL')}</p>
                       </div>
                     </div>
                   ))}
@@ -588,31 +642,8 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
               </>
             )}
 
-            {/* Campo para código de descuento */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Código de descuento</label>
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={codigoDescuento}
-                  onChange={e => setCodigoDescuento(e.target.value)}
-                  placeholder="Ingresa tu código"
-                  className="input-field focus-ring"
-                />
-                <button
-                  onClick={aplicarDescuento}
-                  className="bg-ferremas-primary text-white px-4 py-2 rounded hover:bg-ferremas-primary-dark"
-                >
-                  Aplicar
-                </button>
-              </div>
-              {mensajeDescuento && (
-                <div className={`mt-2 text-sm ${descuentoAplicado ? 'text-green-600' : 'text-red-500'}`}>{mensajeDescuento}</div>
-              )}
-            </div>
-
             {/* Desglose */}
-            {!isAuthenticated && carrito.length > 0 && (
+            {false && !isAuthenticated && carrito.length > 0 && (
               <div className="border-t pt-4 mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <span>Subtotal (Neto):</span>
@@ -628,7 +659,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                 </div>
               </div>
             )}
-            {isAuthenticated && items.length > 0 && resumen && (
+            {false && isAuthenticated && items.length > 0 && resumen && (
               <div className="border-t pt-4 mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <span>Subtotal (Neto):</span>
@@ -674,6 +705,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   <option value="">Selecciona un método</option>
                   <option value="Chilexpress">Chilexpress</option>
                   <option value="Starken">Starken</option>
+                  <option value="Shipit">Shipit</option>
                 </select>
               </div>
               {costoEnvio > 0 && (
@@ -688,10 +720,10 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                   <span>Subtotal:</span>
                   <span>${resumen.subtotal?.toLocaleString('es-CL') || '0'}</span>
                 </div>
-                {descuentoAplicado && (
+                {descuentoInfo && (
                   <div className="flex justify-between items-center mb-2 text-green-600">
                     <span>Descuento aplicado:</span>
-                    <span>- ${montoDescuento.toLocaleString('es-CL')}</span>
+                    <span>- ${descuentoReal.toLocaleString('es-CL')}</span>
                   </div>
                 )}
                 {costoEnvio > 0 && (
@@ -702,7 +734,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                 )}
                 <div className="flex justify-between items-center font-bold text-lg">
                   <span>Total:</span>
-                  <span>${(resumen.total - (descuentoAplicado ? montoDescuento : 0) + costoEnvio).toLocaleString('es-CL') || '0'}</span>
+                  <span>${(resumen.total - (descuentoInfo ? descuentoReal : 0) + costoEnvio).toLocaleString('es-CL') || '0'}</span>
                 </div>
               </div>
             )}
@@ -712,16 +744,16 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
               <div className="border-t pt-4 mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <span>Subtotal (Neto):</span>
-                  <span>${(isAuthenticated ? resumenNeto : (descuentoAplicado ? netoConDescuento : neto)).toLocaleString('es-CL')}</span>
+                  <span>${(isAuthenticated ? resumenNeto : (descuentoInfo ? netoConDescuento : neto)).toLocaleString('es-CL')}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
                   <span>IVA (19%):</span>
-                  <span>${(isAuthenticated ? resumenIva : (descuentoAplicado ? ivaConDescuento : iva)).toLocaleString('es-CL')}</span>
+                  <span>${(isAuthenticated ? resumenIva : (descuentoInfo ? ivaConDescuento : iva)).toLocaleString('es-CL')}</span>
                 </div>
-                {descuentoAplicado && (
+                {descuentoInfo && (
                   <div className="flex justify-between items-center mb-2 text-green-600">
                     <span>Descuento aplicado:</span>
-                    <span>- ${montoDescuento.toLocaleString('es-CL')}</span>
+                    <span>- ${descuentoReal.toLocaleString('es-CL')}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center font-bold text-lg">
@@ -739,14 +771,8 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
             {/* Acciones */}
             <div className="flex justify-between items-center mb-4">
               <button onClick={isAuthenticated ? handleLimpiarCarrito : handleLimpiar} className="text-sm text-red-500 hover:underline">Vaciar carrito</button>
-              <div className="text-xl font-bold">Total: ${isAuthenticated ? (resumen?.total || 0).toLocaleString() : total.toLocaleString()}</div>
+              <div className="text-xl font-bold">Total: ${(isAuthenticated ? resumenTotal : totalConDescuento).toLocaleString('es-CL')}</div>
             </div>
-            {/* Solo mostrar resumen y costo de envío si autenticado */}
-            {isAuthenticated && resumen && (
-              <div className="mb-4 text-sm text-gray-600">
-                <div>Total a pagar: <span className="font-bold text-lg">${resumen.total?.toLocaleString('es-CL') ?? 0}</span></div>
-              </div>
-            )}
             {((isAuthenticated ? items.length > 0 : carrito.length > 0)) && (
               <button
                 className="btn-primary w-full mt-2"
@@ -785,50 +811,6 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
       </div>
     );
   }
-
-  // ÚNICO RETURN PRINCIPAL:
-  return (
-    <>
-      <div style={{ color: 'purple', fontWeight: 'bold', fontSize: '22px', marginBottom: '10px' }}>
-        PRUEBA FUERA DEL MAPEO
-      </div>
-      {/* Desglose y total (ejemplo) */}
-      <div style={{ background: 'orange', padding: 16, marginBottom: 16 }}>
-        <h2>DEBUG: DESGLOSE CARRITO (AUTENTICADO)</h2>
-        <div>Subtotal (Neto): ${resumen?.subtotal?.toLocaleString('es-CL') ?? 0}</div>
-        <div>IVA: ${(resumen ? (resumen.total - resumen.subtotal) : 0).toLocaleString('es-CL')}</div>
-        <div>Total: ${resumen?.total?.toLocaleString('es-CL') ?? 0}</div>
-      </div>
-      {/* Lista de productos autenticados */}
-      {items.length > 0 && (
-        <>
-          <div style={{ color: 'red', fontWeight: 'bold', fontSize: '18px' }}>
-            [DEBUG] Bloque de productos autenticados renderizado
-          </div>
-          <div className="space-y-4 mb-6">
-            {items.map(item => (
-              <div key={item.id} className="flex items-center p-4 border rounded-lg" style={{ background: '#ffeaea', border: '2px solid red' }}>
-                PROD
-                <img
-                  src={item.productoImagen || '/placeholder.png'}
-                  alt={item.productoNombre}
-                  className="w-16 h-16 object-cover rounded mr-4"
-                />
-                <div className="flex-grow">
-                  <h3 className="font-semibold text-gray-900">{item.productoNombre}</h3>
-                  <p className="text-gray-600">${item.productoPrecio?.toLocaleString('es-CL')}</p>
-                  <span className="text-sm text-gray-500">Cantidad: {item.cantidad}</span>
-                </div>
-                <div className="text-right ml-4">
-                  <p className="font-semibold">${(item.productoPrecio * item.cantidad)?.toLocaleString('es-CL')}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </>
-  );
 };
 
 export default Carrito; 

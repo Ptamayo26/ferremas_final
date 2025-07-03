@@ -19,7 +19,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
   const [metodoPago, setMetodoPago] = useState<string>('efectivo');
   const [observaciones, setObservaciones] = useState<string>('');
   const [codigoDescuento, setCodigoDescuento] = useState('');
-  const [descuentoAplicado, setDescuentoAplicado] = useState<string | null>(null);
   const [descuentoError, setDescuentoError] = useState<string | null>(null);
   const [infoDescuento, setInfoDescuento] = useState<{tipo: string, valor: number} | null>(null);
   
@@ -126,19 +125,17 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
         observaciones: observaciones || undefined,
         tipoDocumento,
         datosEmpresa: tipoDocumento === 'factura' ? empresa : undefined,
-        codigoDescuento: descuentoAplicado || undefined,
+        codigoDescuento: codigoDescuento || undefined,
         nombreClienteTemporal: esAnonimo ? nombreTemporal : undefined,
       };
 
       const response = await checkoutService.procesarCheckout(checkoutData);
-      
       setNotification({
         isOpen: true,
         type: 'success',
         title: 'Pedido Procesado',
         message: `Pedido ${response.numeroPedido} creado exitosamente`
       });
-
       onSuccess(response);
       onClose();
     } catch (err: any) {
@@ -156,7 +153,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
 
   const aplicarDescuento = async () => {
     setDescuentoError(null);
-    setDescuentoAplicado(null);
     setInfoDescuento(null);
     if (!codigoDescuento) {
       setDescuentoError('Ingrese un código de descuento');
@@ -164,7 +160,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
     }
     try {
       const data = await checkoutService.validarCodigoDescuento(codigoDescuento);
-      setDescuentoAplicado(codigoDescuento);
       setInfoDescuento({ tipo: data.tipo, valor: data.valor });
     } catch (err) {
       setDescuentoError('Código de descuento inválido o expirado');
@@ -173,7 +168,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
 
   const quitarDescuento = () => {
     setCodigoDescuento('');
-    setDescuentoAplicado(null);
     setInfoDescuento(null);
     setDescuentoError(null);
   };
@@ -445,36 +439,22 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
                     onChange={e => setCodigoDescuento(e.target.value)}
                     placeholder="Ingresa tu código"
                     className="p-2 border rounded w-2/3"
-                    disabled={!!descuentoAplicado}
                   />
                   <button
                     className="btn-secondary"
                     onClick={aplicarDescuento}
                     type="button"
-                    disabled={!!descuentoAplicado}
                   >
-                    Aplicar
+                    Validar
                   </button>
-                  {descuentoAplicado && (
-                    <button
-                      className="btn-danger ml-2"
-                      onClick={quitarDescuento}
-                      type="button"
-                    >
-                      Quitar
-                    </button>
-                  )}
                 </div>
-                {descuentoAplicado && infoDescuento && (
-                  <p className="text-green-600 text-sm mt-2">
-                    Código aplicado: <b>{descuentoAplicado}</b> - 
-                    {infoDescuento.tipo === 'porcentaje'
-                      ? `¡${infoDescuento.valor}% de descuento aplicado!`
-                      : `¡$${infoDescuento.valor.toLocaleString('es-CL')} de descuento aplicado!`}
-                  </p>
+                {infoDescuento && (
+                  <div className="text-green-600 text-sm mt-1">
+                    ¡{infoDescuento.tipo === 'porcentaje' ? `${infoDescuento.valor}% de descuento aplicado!` : `$${infoDescuento.valor} de descuento aplicado!`}
+                  </div>
                 )}
                 {descuentoError && (
-                  <p className="text-red-500 text-sm mt-2">{descuentoError}</p>
+                  <div className="text-red-500 text-sm mt-1">{descuentoError}</div>
                 )}
               </div>
 
@@ -486,10 +466,12 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onSuccess }) => {
                     <span>Subtotal:</span>
                     <span>${resumen.subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Descuento:</span>
-                    <span>-${resumen.descuento.toFixed(2)}</span>
-                  </div>
+                  {resumen.descuento > 0 && (
+                    <div className="flex justify-between">
+                      <span>Descuento:</span>
+                      <span>-${resumen.descuento.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>IVA (19%):</span>
                     <span>${resumen.impuestos.toFixed(2)}</span>

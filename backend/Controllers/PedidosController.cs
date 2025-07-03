@@ -115,7 +115,7 @@ namespace Ferremas.Api.Controllers
                     .Include(p => p.Usuario)
                     .Include(p => p.Detalles)
                         .ThenInclude(d => d.Producto)
-                    .Where(p => p.UsuarioId == cliente.Id && p.Activo == true)
+                    .Where(p => p.ClienteId == cliente.Id && p.Activo == true)
                     .Select(p => new PedidoResponseDTO
                     {
                         Id = p.Id,
