@@ -79,18 +79,68 @@ namespace Ferremas.Api.Controllers
             return Ok(resultados);
         }
 
-        // Nuevos endpoints para Shipit
+        // Endpoints para Shipit
         [HttpGet("shipit/coberturas")]
         public async Task<IActionResult> BuscarCoberturasShipit([FromQuery] string query)
         {
             try
             {
                 var resultados = await _shipitService.BuscarCoberturasAsync(query);
-                return Ok(resultados);
+                
+                if (resultados.CoverageAreas.Count == 0)
+                {
+                    return Ok(new { 
+                        message = "No se encontraron coberturas en Shipit",
+                        available = false,
+                        data = new List<object>()
+                    });
+                }
+                
+                return Ok(new { 
+                    message = "Coberturas encontradas en Shipit",
+                    available = true,
+                    data = resultados.CoverageAreas
+                });
             }
             catch (Exception ex)
             {
-                return BadRequest($"Error al buscar coberturas en Shipit: {ex.Message}");
+                return Ok(new { 
+                    message = $"Error al buscar coberturas en Shipit: {ex.Message}",
+                    available = false,
+                    data = new List<object>()
+                });
+            }
+        }
+
+        [HttpGet("shipit/couriers")]
+        public async Task<IActionResult> ObtenerCouriersShipit()
+        {
+            try
+            {
+                var couriers = await _shipitService.ObtenerCouriersAsync();
+                
+                if (couriers.Count == 0)
+                {
+                    return Ok(new { 
+                        message = "No se encontraron couriers en Shipit",
+                        available = false,
+                        data = new List<object>()
+                    });
+                }
+                
+                return Ok(new { 
+                    message = "Couriers encontrados en Shipit",
+                    available = true,
+                    data = couriers
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { 
+                    message = $"Error al obtener couriers de Shipit: {ex.Message}",
+                    available = false,
+                    data = new List<object>()
+                });
             }
         }
 
@@ -100,11 +150,68 @@ namespace Ferremas.Api.Controllers
             try
             {
                 var resultados = await _shipitService.CotizarEnvioAsync(request);
-                return Ok(resultados);
+                
+                if (resultados.Quotations.Count == 0)
+                {
+                    return Ok(new { 
+                        message = "No se encontraron cotizaciones en Shipit. Verifica que el commune_id sea válido.",
+                        available = false,
+                        data = new List<object>(),
+                        error = "commune_id_invalid"
+                    });
+                }
+                
+                return Ok(new { 
+                    message = "Cotizaciones encontradas en Shipit",
+                    available = true,
+                    data = resultados.Quotations
+                });
             }
             catch (Exception ex)
             {
-                return BadRequest($"Error al cotizar envío con Shipit: {ex.Message}");
+                return Ok(new { 
+                    message = $"Error al cotizar envío con Shipit: {ex.Message}",
+                    available = false,
+                    data = new List<object>(),
+                    error = "shipit_error"
+                });
+            }
+        }
+
+        [HttpPost("shipit/test-commune")]
+        public async Task<IActionResult> ProbarCommuneShipit([FromBody] int communeId)
+        {
+            try
+            {
+                var request = new ShipitCotizacionRequest
+                {
+                    Origen = new ShipitDireccion { Calle = "Av. Providencia", Numero = "123", ComunaId = 13101 },
+                    Destino = new ShipitDireccion { Calle = "Av. Las Condes", Numero = "456", ComunaId = communeId },
+                    Peso = 1,
+                    Alto = 10,
+                    Ancho = 10,
+                    Largo = 10,
+                    ValorSeguro = 0,
+                    Contenido = "Test Ferremas"
+                };
+
+                var resultados = await _shipitService.CotizarEnvioAsync(request);
+                
+                return Ok(new { 
+                    commune_id = communeId,
+                    success = resultados.Quotations.Count > 0,
+                    message = resultados.Quotations.Count > 0 ? "Commune ID válido" : "Commune ID inválido",
+                    data = resultados.Quotations
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { 
+                    commune_id = communeId,
+                    success = false,
+                    message = $"Error: {ex.Message}",
+                    data = new List<object>()
+                });
             }
         }
 
@@ -115,43 +222,86 @@ namespace Ferremas.Api.Controllers
         {
             try
             {
-                // Cotización con Shipit
-                var requestShipit = new ShipitCotizacionRequest
-                {
-                    Origen = new ShipitDireccion { Calle = "Av. Providencia", Numero = "123", ComunaId = 13101 }, // Santiago
-                    Destino = new ShipitDireccion { Calle = destino, Numero = "456", ComunaId = 13102 }, // Providencia
-                    Peso = peso,
-                    Alto = alto,
-                    Ancho = ancho,
-                    Largo = largo,
-                    ValorSeguro = 0,
-                    Contenido = "Productos Ferremas"
-                };
-
-                var cotizacionShipit = await _shipitService.CotizarEnvioAsync(requestShipit);
+                var chilexpressResults = new List<object>();
+                var shipitResults = new List<object>();
+                var messages = new List<string>();
 
                 // Cotización con Chilexpress
-                var requestChilexpress = new CotizacionRequest
+                try
                 {
-                    CodigoCoberturaOrigen = "13101", // Santiago
-                    CodigoCoberturaDestino = "13102", // Providencia
-                    Peso = (double)peso,
-                    Largo = (double)largo,
-                    Ancho = (double)ancho,
-                    Alto = (double)alto
+                    var requestChilexpress = new CotizacionRequest
+                    {
+                        CodigoCoberturaOrigen = "13101", // Santiago
+                        CodigoCoberturaDestino = "13102", // Providencia
+                        Peso = (double)peso,
+                        Largo = (double)largo,
+                        Ancho = (double)ancho,
+                        Alto = (double)alto
+                    };
+
+                    var cotizacionChilexpress = await _chilexpressService.CotizarEnvioAsync(requestChilexpress);
+                    chilexpressResults = cotizacionChilexpress.Cast<object>().ToList();
+                }
+                catch (Exception ex)
+                {
+                    messages.Add($"Error en Chilexpress: {ex.Message}");
+                }
+
+                // Cotización con Shipit
+                try
+                {
+                    var requestShipit = new ShipitCotizacionRequest
+                    {
+                        Origen = new ShipitDireccion { Calle = "Av. Providencia", Numero = "123", ComunaId = 13101 },
+                        Destino = new ShipitDireccion { Calle = destino, Numero = "456", ComunaId = 13102 },
+                        Peso = peso,
+                        Alto = alto,
+                        Ancho = ancho,
+                        Largo = largo,
+                        ValorSeguro = 0,
+                        Contenido = "Productos Ferremas"
+                    };
+
+                    var cotizacionShipit = await _shipitService.CotizarEnvioAsync(requestShipit);
+                    shipitResults = cotizacionShipit.Quotations.Cast<object>().ToList();
+                }
+                catch (Exception ex)
+                {
+                    messages.Add($"Error en Shipit: {ex.Message}");
+                }
+
+                var resultado = new
+                {
+                    chilexpress = chilexpressResults,
+                    shipit = shipitResults,
+                    messages = messages
                 };
 
-                var cotizacionChilexpress = await _chilexpressService.CotizarEnvioAsync(requestChilexpress);
-
-                return Ok(new
-                {
-                    shipit = cotizacionShipit,
-                    chilexpress = cotizacionChilexpress
-                });
+                return Ok(resultado);
             }
             catch (Exception ex)
             {
                 return BadRequest($"Error al obtener cotizaciones: {ex.Message}");
+            }
+        }
+
+        [HttpGet("shipit/status")]
+        public async Task<IActionResult> VerificarEstadoShipit()
+        {
+            try
+            {
+                var isAvailable = await _shipitService.IsServiceAvailableAsync();
+                return Ok(new { 
+                    available = isAvailable,
+                    message = isAvailable ? "Shipit está disponible" : "Shipit no está disponible"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { 
+                    available = false,
+                    message = $"Error al verificar Shipit: {ex.Message}"
+                });
             }
         }
     }

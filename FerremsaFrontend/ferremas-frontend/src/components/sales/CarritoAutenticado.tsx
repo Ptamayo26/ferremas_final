@@ -76,10 +76,13 @@ const CarritoAutenticado: React.FC = () => {
   useEffect(() => {
     if (direccionSeleccionada && direccionSeleccionada.id) {
       setDireccionEnvio(`${direccionSeleccionada.calle} ${direccionSeleccionada.numero}${direccionSeleccionada.departamento ? ', ' + direccionSeleccionada.departamento : ''}`);
-      setRegion(direccionSeleccionada.region);
+      // Buscar el código de la región por nombre
+      const regionEncontrada = regiones.find(r => r.nombre === direccionSeleccionada.region);
+      setRegion(regionEncontrada?.codigo || direccionSeleccionada.region);
       setComuna(direccionSeleccionada.comuna);
+      setCiudadEnvio(direccionSeleccionada.comuna || ''); // <--- Asegura que ciudadEnvio se setea
     }
-  }, [direccionSeleccionada]);
+  }, [direccionSeleccionada, regiones]);
 
   useEffect(() => {
     const fetchCarrito = async () => {
@@ -426,7 +429,7 @@ const CarritoAutenticado: React.FC = () => {
                   <select
                     className="input-field w-full"
                     value={comuna}
-                    onChange={e => setComuna(e.target.value)}
+                    onChange={e => { setComuna(e.target.value); setCiudadEnvio(e.target.value); }}
                     disabled={!region}
                   >
                     <option value="">Selecciona una comuna</option>

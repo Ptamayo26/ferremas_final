@@ -58,6 +58,12 @@ namespace Ferremas.Api.Models
         [Column("correo")]
         public string Correo { get; set; } = string.Empty;
         
+        [Column("tracking_number")]
+        public string? TrackingNumber { get; set; }
+        
+        [Column("costo_envio")]
+        public decimal CostoEnvio { get; set; } = 0;
+        
         // Relaciones
         [ForeignKey("PedidoId")]
         public required Pedido Pedido { get; set; }

@@ -117,6 +117,7 @@ builder.Services.AddScoped<MercadoPagoService>();
 builder.Services.AddScoped<IProveedoresService, ProveedoresService>();
 builder.Services.AddScoped<IFacturaService, FacturaService>();
 builder.Services.AddScoped<INotificacionesService, NotificacionesService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IReportesService, ReportesService>();
 builder.Services.AddScoped<IDescuentoService, DescuentoService>();
 

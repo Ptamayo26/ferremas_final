@@ -21,12 +21,16 @@ namespace Ferremas.Api.Controllers
         private readonly AppDbContext _context;
         private readonly IDescuentoService _descuentoService;
         private readonly WebpayService _webpayService;
+        private readonly ShipitService _shipitService;
+        private readonly IEmailService _emailService;
 
-        public CheckoutController(AppDbContext context, IDescuentoService descuentoService, WebpayService webpayService)
+        public CheckoutController(AppDbContext context, IDescuentoService descuentoService, WebpayService webpayService, ShipitService shipitService, IEmailService emailService)
         {
             _context = context;
             _descuentoService = descuentoService;
             _webpayService = webpayService;
+            _shipitService = shipitService;
+            _emailService = emailService;
         }
 
         [HttpGet("resumen")]
@@ -316,24 +320,66 @@ namespace Ferremas.Api.Controllers
                 pedido.NumeroPedido = numeroPedido;
                 await _context.SaveChangesAsync();
 
-                // Crear el envío (ejemplo, ajusta según tu lógica actual)
+                // Crear el envío en Shipit
+                var shipitRequest = new ShipitEnvioRequestDto
+                {
+                    Courier = "chilexpress",
+                    NombreDestinatario = dto.Rut ?? "Cliente Ferremas",
+                    Direccion = direccion != null ? $"{direccion.Calle} {direccion.Numero}" : dto.Calle ?? "",
+                    ComunaDestino = direccion?.Comuna ?? dto.Comuna ?? "Santiago",
+                    Correo = dto.Correo ?? "cliente@ferremas.cl",
+                    Telefono = dto.Telefono ?? "+56912345678",
+                    ItemsCount = carritoItems.Sum(c => c.Cantidad),
+                    Largo = 20,
+                    Ancho = 20,
+                    Alto = 20,
+                    Peso = 2000, // 2kg por defecto
+                    ValorDeclarado = (int)totalFinal,
+                    Referencia = numeroPedido,
+                    Contenido = "Productos Ferremas"
+                };
+
+                Console.WriteLine($"[CHECKOUT] Creando envío en Shipit: {System.Text.Json.JsonSerializer.Serialize(shipitRequest)}");
+                
+                var shipitResponse = await _shipitService.CrearEnvioAsync(shipitRequest);
+                Console.WriteLine($"[CHECKOUT] Respuesta de Shipit: {System.Text.Json.JsonSerializer.Serialize(shipitResponse)}");
+                
+                if (!shipitResponse.Success)
+                {
+                    Console.WriteLine($"[CHECKOUT] Advertencia: Shipit falló pero continuando con el proceso. Error: {shipitResponse.Error}");
+                }
+
+                // Crear el envío local
                 var envio = new Envio
                 {
                     PedidoId = pedido.Id,
                     DireccionEnvio = direccion != null ? $"{direccion.Calle} {direccion.Numero}, {direccion.Comuna}, {direccion.Region}" : "",
                     ProveedorTransporte = "Chilexpress",
-                    EstadoEnvio = "EN_PREPARACION",
+                    EstadoEnvio = shipitResponse.Success ? "EN_PREPARACION" : "PENDIENTE",
                     ComunaDestino = direccion?.Comuna ?? "",
                     RegionDestino = direccion?.Region ?? "",
-                    NombreDestinatario = dto.Rut ?? "", // Usar RUT como nombre por ahora
+                    NombreDestinatario = dto.Rut ?? "",
                     Rut = dto.Rut ?? "",
                     Correo = dto.Correo ?? "",
                     FechaEnvio = DateTime.UtcNow,
                     FechaCreacion = DateTime.UtcNow,
-                    Pedido = pedido // Asignar la referencia requerida
+                    Pedido = pedido,
+                    TrackingNumber = shipitResponse.TrackingNumber,
+                    CostoEnvio = shipitResponse.Cost ?? 0
                 };
                 _context.Envios.Add(envio);
                 await _context.SaveChangesAsync();
+
+                Console.WriteLine($"[CHECKOUT] Envío creado - Tracking: {shipitResponse.TrackingNumber}, Costo: {shipitResponse.Cost}");
+
+                // Enviar email de confirmación
+                var emailEnviado = await _emailService.EnviarConfirmacionPedido(
+                    dto.Correo ?? cliente?.CorreoElectronico ?? "cliente@ferremas.cl",
+                    numeroPedido,
+                    totalFinal,
+                    shipitResponse.TrackingNumber
+                );
+                Console.WriteLine($"[CHECKOUT] Email de confirmación enviado: {emailEnviado}");
 
                 // Limpiar carrito solo si es autenticado
                 if (usuarioId != null)
@@ -424,6 +470,59 @@ namespace Ferremas.Api.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("test")]
+        [AllowAnonymous]
+        public async Task<ActionResult> TestCheckout()
+        {
+            try
+            {
+                Console.WriteLine("[TEST CHECKOUT] Iniciando prueba de checkout");
+                
+                // Crear datos de prueba
+                var testDto = new CheckoutRequestDTO
+                {
+                    ClienteId = 1,
+                    DireccionId = 1,
+                    MetodoPago = "efectivo",
+                    Observaciones = "Prueba de checkout",
+                    TipoDocumento = "boleta",
+                    Items = new List<CarritoItemDTO>
+                    {
+                        new CarritoItemDTO
+                        {
+                            ProductoId = 1,
+                            ProductoNombre = "Martillo",
+                            ProductoPrecio = 15000,
+                            Cantidad = 1,
+                            Subtotal = 15000,
+                            PrecioOriginal = 15000,
+                            PrecioConDescuento = 0
+                        }
+                    },
+                    Rut = "12345678-9",
+                    Correo = "test@ferremas.cl",
+                    Calle = "Av. Test 123",
+                    Numero = "456",
+                    Comuna = "Santiago",
+                    Region = "Metropolitana",
+                    CostoEnvio = 5000
+                };
+
+                Console.WriteLine("[TEST CHECKOUT] DTO creado, procesando...");
+                
+                // Llamar al método de procesamiento
+                var result = await ProcesarCheckout(testDto);
+                
+                Console.WriteLine("[TEST CHECKOUT] Procesamiento completado");
+                return Ok(new { message = "Test completado", result = result });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TEST CHECKOUT] Error: {ex.Message}");
+                return BadRequest($"Error en test: {ex.Message}");
             }
         }
 

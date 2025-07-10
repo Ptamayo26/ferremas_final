@@ -36,6 +36,7 @@ namespace Ferremas.Api.DTOs
         // Nuevos campos para RUT y Correo
         public string? Rut { get; set; }
         public string? Correo { get; set; }
+        public string? Telefono { get; set; }
 
         // Nuevos campos para envío
         public string? MetodoEnvio { get; set; } // "Chilexpress", "Starken", "Shipit"
