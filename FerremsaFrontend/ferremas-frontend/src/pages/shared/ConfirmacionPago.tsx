@@ -10,12 +10,15 @@ interface PedidoDetalle {
   tiempoEnvio?: string;
   urlBoleta?: string;
   urlFactura?: string;
-  productos?: { nombre: string; cantidad: number; precio: number }[];
+  productos?: { nombre: string; cantidad: number; precio: number; precioConDescuento?: number; precioOriginal?: number }[];
   tipoDocumento: string;
   subtotal?: number;
   descuento?: number;
   impuestos?: number;
   envio?: number;
+  descuentoBase?: number;
+  descuentoCupon?: number;
+  totalFinal?: number;
 }
 
 const ConfirmacionPago: React.FC = () => {
@@ -37,11 +40,15 @@ const ConfirmacionPago: React.FC = () => {
         const resp = await api.confirmarTransaccionWebpay(token);
         if (!resp || !resp.pedido) throw new Error('No se pudo obtener la información del pedido.');
         setPedido(resp.pedido);
-        setLoading(false);
+        // Log para depuración de productos recibidos
+        if (resp.pedido.productos) {
+          console.log('Pedido recibido en confirmación:', resp.pedido);
+        }
       } catch (e: any) {
         setError(e.message || 'No se pudo obtener la información del pedido.');
         setLoading(false);
       }
+      setLoading(false);
     };
     if (token) fetchPedido();
     else {
@@ -73,7 +80,7 @@ const ConfirmacionPago: React.FC = () => {
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Total:</span>
-            <span className="font-bold text-xl text-ferremas-primary">${Math.round(pedido.total).toLocaleString('es-CL')}</span>
+            <span className="font-bold text-xl text-ferremas-primary">${Math.round(pedido.totalFinal ?? pedido.total).toLocaleString('es-CL')}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Estado:</span>
@@ -94,39 +101,65 @@ const ConfirmacionPago: React.FC = () => {
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2">Productos:</h3>
         <ul className="divide-y divide-gray-200">
-          {pedido.productos?.map((prod, idx) => (
-            <li key={idx} className="py-2 flex justify-between">
-              <span>{prod.nombre} <span className="text-gray-500">x{prod.cantidad}</span></span>
-              <span>${prod.precio.toLocaleString('es-CL')}</span>
-            </li>
-          ))}
+          {pedido.productos?.map((prod, idx) => {
+            console.log("Renderizando producto:", prod);
+            return (
+              <li key={idx} className="py-2 flex justify-between items-center">
+                <span>{prod.nombre} <span className="text-gray-500">x{prod.cantidad}</span></span>
+                <span>
+                  {prod.precioConDescuento && prod.precioConDescuento > 0 && prod.precioOriginal && prod.precioOriginal > prod.precioConDescuento ? (
+                    <>
+                      <span className="line-through text-gray-400 mr-2">${prod.precioOriginal.toLocaleString('es-CL')}</span>
+                      <span className="text-ferremas-primary font-bold">${prod.precioConDescuento.toLocaleString('es-CL')}</span>
+                    </>
+                  ) : (
+                    <span className="text-ferremas-primary font-bold">${prod.precio.toLocaleString('es-CL')}</span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </div>
       {/* Desglose de totales */}
       <div className="bg-gray-50 rounded-lg p-4 mb-6">
         <div className="space-y-1">
-          <div className="flex justify-between">
-            <span>Subtotal:</span>
-            <span>${pedido.subtotal ? Math.round(pedido.subtotal).toLocaleString('es-CL') : '0'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Descuento:</span>
-            <span>-${pedido.descuento ? Math.round(pedido.descuento).toLocaleString('es-CL') : '0'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>IVA (19%):</span>
-            <span>${pedido.impuestos ? Math.round(pedido.impuestos).toLocaleString('es-CL') : '0'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Envío:</span>
-            <span>${pedido.envio ? Math.round(pedido.envio).toLocaleString('es-CL') : '0'}</span>
-          </div>
-          <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg">
-            <span>Total:</span>
-            <span className="text-ferremas-primary">${Math.round(pedido.total).toLocaleString('es-CL')}</span>
+          {pedido.subtotal !== undefined && (
+            <div className="flex justify-between">
+              <span>Subtotal:</span>
+              <span>${Math.round(pedido.subtotal).toLocaleString('es-CL')}</span>
+            </div>
+          )}
+          {(pedido.descuentoBase !== undefined && pedido.descuentoBase > 0) && (
+            <div className="flex justify-between text-green-700">
+              <span>Descuento base:</span>
+              <span>- ${Math.round(pedido.descuentoBase).toLocaleString('es-CL')}</span>
+            </div>
+          )}
+          {(pedido.descuentoCupon !== undefined && pedido.descuentoCupon > 0) && (
+            <div className="flex justify-between text-green-700">
+              <span>Descuento cupón:</span>
+              <span>- ${Math.round(pedido.descuentoCupon).toLocaleString('es-CL')}</span>
+            </div>
+          )}
+          {pedido.impuestos !== undefined && pedido.impuestos > 0 && (
+            <div className="flex justify-between">
+              <span>Impuestos:</span>
+              <span>${Math.round(pedido.impuestos).toLocaleString('es-CL')}</span>
+            </div>
+          )}
+          {pedido.envio !== undefined && pedido.envio > 0 && (
+            <div className="flex justify-between">
+              <span>Envío:</span>
+              <span>${Math.round(pedido.envio).toLocaleString('es-CL')}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold text-ferremas-primary text-lg mt-2">
+            <span>Total pagado:</span>
+            <span>${Math.round(pedido.totalFinal ?? pedido.total).toLocaleString('es-CL')}</span>
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-2">El total incluye impuestos y envío.</p>
+        <p className="text-xs text-gray-500 mt-2">El total pagado incluye todos los descuentos, impuestos y envío.</p>
       </div>
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         {pedido.tipoDocumento !== 'factura' && (

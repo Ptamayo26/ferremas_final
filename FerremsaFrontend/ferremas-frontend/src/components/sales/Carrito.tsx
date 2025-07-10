@@ -417,13 +417,13 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
   // Cálculos para desglose de carrito anónimo
   const neto = Math.round(total / 1.19);
   const iva = total - neto;
-  const totalConDescuento = total - descuentoReal;
-  const netoConDescuento = Math.round(totalConDescuento / 1.19);
-  const ivaConDescuento = totalConDescuento - netoConDescuento;
+  // El descuento debe aplicarse sobre el total con IVA
+  const descuentoSobreTotal = descuentoInfo ? (descuentoInfo.tipo === 'porcentaje' ? Math.round(total * (descuentoInfo.valor / 100)) : Math.min(descuentoInfo.valor, total)) : 0;
+  const totalFinal = total - descuentoSobreTotal;
 
   // Cálculos para desglose de carrito autenticado (usando solo propiedades válidas)
   const resumenNeto = resumen?.subtotal ?? 0;
-  const resumenTotal = resumen?.total ?? totalConDescuento;
+  const resumenTotal = resumen?.total ?? totalFinal;
   const resumenIva = resumen ? resumenTotal - resumenNeto : 0;
 
   // Mostrar desglose solo si hay productos en el carrito o en el resumen
@@ -444,15 +444,15 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
     console.log('total:', total);
     console.log('neto:', neto);
     console.log('iva:', iva);
-    console.log('totalConDescuento:', totalConDescuento);
+    console.log('totalConDescuento:', totalFinal);
     console.log('resumenNeto:', resumenNeto);
     console.log('resumenIva:', resumenIva);
     console.log('resumenTotal:', resumenTotal);
     console.log('--------------------------');
-  }, [carrito, items, resumen, total, neto, iva, totalConDescuento, resumenNeto, resumenIva, resumenTotal]);
+  }, [carrito, items, resumen, total, neto, iva, totalFinal, resumenNeto, resumenIva, resumenTotal]);
 
   // Log para depuración del valor total mostrado
-  const totalMostrado = isAuthenticated ? resumenTotal : totalConDescuento;
+  const totalMostrado = isAuthenticated ? resumenTotal : totalFinal;
   useEffect(() => {
     console.log('Valor totalMostrado:', totalMostrado);
     if (totalMostrado === 0) {
@@ -655,7 +655,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                 </div>
                 <div className="flex justify-between items-center font-bold text-lg">
                   <span>Total:</span>
-                  <span>${total.toLocaleString('es-CL')}</span>
+                  <span>${totalFinal.toLocaleString('es-CL')}</span>
                 </div>
               </div>
             )}
@@ -744,11 +744,11 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
               <div className="border-t pt-4 mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <span>Subtotal (Neto):</span>
-                  <span>${(isAuthenticated ? resumenNeto : (descuentoInfo ? netoConDescuento : neto)).toLocaleString('es-CL')}</span>
+                  <span>${(isAuthenticated ? resumenNeto : (descuentoInfo ? neto : neto)).toLocaleString('es-CL')}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
                   <span>IVA (19%):</span>
-                  <span>${(isAuthenticated ? resumenIva : (descuentoInfo ? ivaConDescuento : iva)).toLocaleString('es-CL')}</span>
+                  <span>${(isAuthenticated ? resumenIva : (descuentoInfo ? iva : iva)).toLocaleString('es-CL')}</span>
                 </div>
                 {descuentoInfo && (
                   <div className="flex justify-between items-center mb-2 text-green-600">
@@ -758,7 +758,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
                 )}
                 <div className="flex justify-between items-center font-bold text-lg">
                   <span>Total:</span>
-                  <span>${(isAuthenticated ? resumenTotal : totalConDescuento).toLocaleString('es-CL')}</span>
+                  <span>${(isAuthenticated ? resumenTotal : totalFinal).toLocaleString('es-CL')}</span>
                 </div>
               </div>
             ) : (
@@ -771,7 +771,7 @@ const Carrito: React.FC<CarritoProps> = ({ isOpen, onClose, modoPagina = false }
             {/* Acciones */}
             <div className="flex justify-between items-center mb-4">
               <button onClick={isAuthenticated ? handleLimpiarCarrito : handleLimpiar} className="text-sm text-red-500 hover:underline">Vaciar carrito</button>
-              <div className="text-xl font-bold">Total: ${(isAuthenticated ? resumenTotal : totalConDescuento).toLocaleString('es-CL')}</div>
+              <div className="text-xl font-bold">Total: ${(isAuthenticated ? resumenTotal : totalFinal).toLocaleString('es-CL')}</div>
             </div>
             {((isAuthenticated ? items.length > 0 : carrito.length > 0)) && (
               <button

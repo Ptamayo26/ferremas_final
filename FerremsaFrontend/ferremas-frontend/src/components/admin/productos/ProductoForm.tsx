@@ -94,16 +94,16 @@ const ProductoForm: React.FC<ProductoFormProps> = ({ open, onClose, onSubmit, in
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-2">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md md:max-w-lg lg:max-w-xl max-h-[90vh] flex flex-col relative">
         <button
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 z-10"
           onClick={onClose}
         >
           ×
         </button>
-        <h2 className="text-xl font-bold mb-4">{initialData ? 'Editar Producto' : 'Agregar Producto'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <h2 className="text-xl font-bold mb-4 px-6 pt-6">{initialData ? 'Editar Producto' : 'Agregar Producto'}</h2>
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-y-auto px-6 pb-4 space-y-4">
           {form.codigo && (
             <div>
               <label className="block text-sm font-medium mb-1">Código asignado</label>
@@ -204,22 +204,22 @@ const ProductoForm: React.FC<ProductoFormProps> = ({ open, onClose, onSubmit, in
             )}
             {subiendoImagen && <div className="text-sm text-blue-600 mt-1">Subiendo imagen...</div>}
           </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <button
-              type="button"
-              className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
-              onClick={onClose}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-            >
-              {initialData ? 'Guardar Cambios' : 'Agregar'}
-            </button>
-          </div>
         </form>
+        <div className="flex justify-end gap-2 mt-4 sticky bottom-0 bg-white pt-4 pb-2 z-10">
+          <button
+            type="button"
+            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+          >
+            {initialData ? 'Guardar Cambios' : 'Agregar'}
+          </button>
+        </div>
       </div>
     </div>
   );

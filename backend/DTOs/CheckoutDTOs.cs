@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Ferremas.Api.DTOs
 {
@@ -50,6 +51,28 @@ namespace Ferremas.Api.DTOs
         public DateTime FechaCreacion { get; set; }
         public string? UrlPago { get; set; } // Para MercadoPago
         public string? CodigoPago { get; set; } // Para MercadoPago
+        public List<ProductoResumenDTO> Productos { get; set; } = new();
+        // NUEVOS CAMPOS PARA DESGLOSE
+        public decimal Subtotal { get; set; }
+        public decimal DescuentoBase { get; set; }
+        public decimal DescuentoCupon { get; set; }
+        public decimal Impuestos { get; set; }
+        public decimal Envio { get; set; }
+        public decimal TotalFinal { get; set; }
+    }
+
+    public class ProductoResumenDTO
+    {
+        [JsonProperty("nombre")]
+        public string Nombre { get; set; } = string.Empty;
+        [JsonProperty("cantidad")]
+        public int Cantidad { get; set; }
+        [JsonProperty("precio")]
+        public decimal Precio { get; set; }
+        [JsonProperty("precioOriginal")]
+        public decimal PrecioOriginal { get; set; }
+        [JsonProperty("precioConDescuento")]
+        public decimal PrecioConDescuento { get; set; }
     }
 
     public class CheckoutResumenDTO

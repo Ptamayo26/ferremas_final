@@ -138,6 +138,13 @@ namespace Ferremas.Api.Controllers
                 Cliente cliente = null;
                 Direccion direccion = null;
 
+                // Usar SIEMPRE los productos enviados en dto.Items
+                if (dto.Items == null || dto.Items.Count == 0)
+                    return BadRequest("No se enviaron productos para el pedido.");
+                carritoItems = dto.Items;
+                Console.WriteLine($"[Checkout] carritoItems recibidos: {System.Text.Json.JsonSerializer.Serialize(carritoItems)}");
+                Console.WriteLine($"[Checkout] Código de descuento recibido: {dto.CodigoDescuento}");
+
                 if (usuarioId == null) // Pedido anónimo
                 {
                     // Crear cliente temporal
@@ -171,42 +178,9 @@ namespace Ferremas.Api.Controllers
                     };
                     _context.Direcciones.Add(direccion);
                     await _context.SaveChangesAsync();
-
-                    // Usar los productos enviados en el DTO
-                    if (dto.Items == null || dto.Items.Count == 0)
-                        return BadRequest("No se enviaron productos para el pedido anónimo.");
-                    carritoItems = dto.Items;
                 }
                 else // Pedido autenticado
                 {
-                    // Verificar que el carrito no esté vacío
-                    var carrito = await _context.Carrito
-                        .Include(c => c.Producto)
-                        .Where(c => c.UsuarioId == usuarioId && c.Activo)
-                        .ToListAsync();
-
-                    if (!carrito.Any())
-                        return BadRequest("El carrito está vacío");
-
-                    carritoItems = carrito.Select(c => new CarritoItemDTO
-                    {
-                        Id = c.Id,
-                        ProductoId = c.ProductoId,
-                        ProductoNombre = c.Producto.Nombre,
-                        ProductoPrecio = c.Producto.Precio,
-                        ProductoImagen = c.Producto.ImagenUrl,
-                        Cantidad = c.Cantidad,
-                        Subtotal = c.Producto.Precio * c.Cantidad,
-                        FechaAgregado = c.FechaAgregado
-                    }).ToList();
-
-                    // Verificar stock de todos los productos
-                    foreach (var item in carrito)
-                    {
-                        if (item.Producto.Stock < item.Cantidad)
-                            return BadRequest($"Stock insuficiente para {item.Producto.Nombre}. Disponible: {item.Producto.Stock}");
-                    }
-
                     // SIEMPRE buscar el cliente por usuarioId
                     cliente = await _context.Clientes
                         .Include(c => c.Usuario)
@@ -225,29 +199,44 @@ namespace Ferremas.Api.Controllers
                     }
                     else
                     {
-                        // Crear dirección con los datos manuales del DTO
-                        direccion = new Direccion
+                        // Buscar si ya existe una dirección igual para este usuario (normalizando)
+                        direccion = cliente.Usuario?.Direcciones?.FirstOrDefault(d =>
+                            (d.Calle ?? "").Trim().ToLower() == (dto.Calle ?? "Sin dirección").Trim().ToLower() &&
+                            (d.Numero ?? "").Trim().ToLower() == (dto.Numero ?? "S/N").Trim().ToLower() &&
+                            ((d.Departamento ?? "").Trim().ToLower() == (dto.Departamento ?? "").Trim().ToLower()) &&
+                            (d.Comuna ?? "").Trim().ToLower() == (dto.Comuna ?? "").Trim().ToLower() &&
+                            (d.Region ?? "").Trim().ToLower() == (dto.Region ?? "").Trim().ToLower()
+                        );
+                        if (direccion == null)
                         {
-                            Calle = dto.Calle ?? "Sin dirección",
-                            Numero = dto.Numero ?? "S/N",
-                            Departamento = dto.Departamento ?? "",
-                            Comuna = dto.Comuna ?? "",
-                            Region = dto.Region ?? "",
-                            CodigoPostal = dto.CodigoPostal ?? "",
-                            EsPrincipal = false,
-                            FechaCreacion = DateTime.UtcNow,
-                            FechaModificacion = DateTime.UtcNow,
-                            ClienteId = cliente.Id,
-                            UsuarioId = usuarioId
-                        };
-                        _context.Direcciones.Add(direccion);
-                        await _context.SaveChangesAsync();
+                            // Si no existe, crearla
+                            direccion = new Direccion
+                            {
+                                Calle = dto.Calle ?? "Sin dirección",
+                                Numero = dto.Numero ?? "S/N",
+                                Departamento = dto.Departamento ?? "",
+                                Comuna = dto.Comuna ?? "",
+                                Region = dto.Region ?? "",
+                                CodigoPostal = dto.CodigoPostal ?? "",
+                                EsPrincipal = false,
+                                FechaCreacion = DateTime.UtcNow,
+                                FechaModificacion = DateTime.UtcNow,
+                                ClienteId = cliente.Id,
+                                UsuarioId = usuarioId
+                            };
+                            _context.Direcciones.Add(direccion);
+                            await _context.SaveChangesAsync();
+                        }
                     }
                 }
 
-                // Calcular totales
-                var subtotal = carritoItems.Sum(c => c.ProductoPrecio * c.Cantidad);
-                decimal descuento = 0m;
+                // Calcular subtotal base (sin descuentos)
+                var subtotalBase = carritoItems.Sum(c => (c.PrecioOriginal > 0 ? c.PrecioOriginal : c.ProductoPrecio) * c.Cantidad);
+                // El subtotal con descuentos ya incluye IVA
+                var totalConIVA = carritoItems.Sum(c => (c.PrecioConDescuento > 0 ? c.PrecioConDescuento : c.PrecioOriginal > 0 ? c.PrecioOriginal : c.ProductoPrecio) * c.Cantidad);
+                // Descuento total aplicado (base + cupón)
+                var descuentoTotal = subtotalBase - totalConIVA;
+                decimal descuentoCupon = 0m;
                 if (!string.IsNullOrEmpty(dto.CodigoDescuento))
                 {
                     var desc = await _descuentoService.ObtenerPorCodigo(dto.CodigoDescuento);
@@ -255,17 +244,31 @@ namespace Ferremas.Api.Controllers
                     {
                         if (desc.Tipo == "porcentaje")
                         {
-                            descuento = Math.Round(subtotal * (desc.Valor / 100m), 0);
+                            descuentoCupon = Math.Round(totalConIVA * (desc.Valor / 100m), 0);
                         }
                         else if (desc.Tipo == "monto")
                         {
-                            descuento = Math.Min(desc.Valor, subtotal); // No puede ser mayor al subtotal
+                            descuentoCupon = Math.Min(desc.Valor, totalConIVA);
+                        }
+                        else
+                        {
+                            descuentoCupon = 0m;
                         }
                     }
                 }
-                var impuestos = (subtotal - descuento) * 0.19m; // IVA 19% sobre el neto
-                var costoEnvio = dto.CostoEnvio ?? 0m; // Usar el costo de envío enviado desde el frontend
-                var total = Math.Round(subtotal - descuento + impuestos + costoEnvio, 0); // Redondear a enteros para Webpay CLP
+                var costoEnvio = dto.CostoEnvio ?? 0m;
+                var totalFinal = totalConIVA - descuentoCupon + costoEnvio;
+                // Calcular IVA sobre el total final (aprox)
+                var iva = Math.Round(totalFinal / 1.19m * 0.19m, 0);
+                // Guardar estos valores en el pedido y retornarlos en la respuesta
+
+                // LOGS DETALLADOS DE TOTALES
+                Console.WriteLine($"[CHECKOUT] subtotalBase (sin descuentos): {subtotalBase}");
+                Console.WriteLine($"[CHECKOUT] totalConIVA (con descuentos base): {totalConIVA}");
+                Console.WriteLine($"[CHECKOUT] descuentoTotal (base): {descuentoTotal}");
+                Console.WriteLine($"[CHECKOUT] descuentoCupon: {descuentoCupon}");
+                Console.WriteLine($"[CHECKOUT] costoEnvio: {costoEnvio}");
+                Console.WriteLine($"[CHECKOUT] totalFinal (total pagado): {totalFinal}");
 
                 // Crear el pedido
                 var pedido = new Pedido
@@ -273,7 +276,7 @@ namespace Ferremas.Api.Controllers
                     UsuarioId = usuarioId,
                     ClienteId = cliente.Id,
                     FechaPedido = DateTime.UtcNow,
-                    Total = total,
+                    Total = totalFinal,
                     Estado = "PENDIENTE",
                     Observaciones = (dto.Observaciones ?? "") + $" | RUT: {dto.Rut ?? ""} | Correo: {dto.Correo ?? ""}",
                     DireccionEntrega = direccion != null ? $"{direccion.Calle} {direccion.Numero}, {direccion.Comuna}, {direccion.Region}" : "",
@@ -284,9 +287,9 @@ namespace Ferremas.Api.Controllers
                     {
                         ProductoId = c.ProductoId,
                         Cantidad = c.Cantidad,
-                        PrecioUnitario = c.ProductoPrecio,
-                        Subtotal = c.ProductoPrecio * c.Cantidad,
-                        Observaciones = null
+                        PrecioUnitario = (c.PrecioConDescuento > 0 ? c.PrecioConDescuento : c.PrecioOriginal > 0 ? c.PrecioOriginal : c.ProductoPrecio),
+                        Subtotal = (c.PrecioConDescuento > 0 ? c.PrecioConDescuento : c.PrecioOriginal > 0 ? c.PrecioOriginal : c.ProductoPrecio) * c.Cantidad,
+                        Observaciones = $"precioOriginal:{(c.PrecioOriginal > 0 ? c.PrecioOriginal : c.ProductoPrecio)},precioConDescuento:{(c.PrecioConDescuento > 0 ? c.PrecioConDescuento : 0)}"
                     }).ToList()
                 };
 
@@ -369,15 +372,44 @@ namespace Ferremas.Api.Controllers
                     _context.Pagos.Add(pago);
                     await _context.SaveChangesAsync();
 
+                    // Log de productos y precios enviados al frontend
+                    foreach (var c in carritoItems)
+                    {
+                        var precioFinal = (c.PrecioConDescuento > 0 ? c.PrecioConDescuento : c.PrecioOriginal > 0 ? c.PrecioOriginal : c.ProductoPrecio);
+                        Console.WriteLine($"[CHECKOUT] Producto: {c.ProductoNombre}, Precio enviado: {precioFinal}");
+                    }
+                    // Justo antes del return Ok(new CheckoutResponseDTO ...)
+                    Console.WriteLine($"[CHECKOUT] Retornando DTO con Total: {totalFinal}");
+                    var productosDTO = carritoItems.Select(c => new ProductoResumenDTO {
+                        Nombre = c.ProductoNombre,
+                        Cantidad = c.Cantidad,
+                        Precio = (c.PrecioConDescuento > 0 ? c.PrecioConDescuento : c.PrecioOriginal > 0 ? c.PrecioOriginal : c.ProductoPrecio),
+                        PrecioOriginal = (c.PrecioOriginal > 0 ? c.PrecioOriginal : c.ProductoPrecio),
+                        PrecioConDescuento = (c.PrecioConDescuento > 0 ? c.PrecioConDescuento : 0)
+                    }).ToList();
+
+                    foreach (var p in productosDTO)
+                    {
+                        Console.WriteLine($"[DEBUG DTO SERIALIZADO] {p.Nombre} - PrecioOriginal: {p.PrecioOriginal}, PrecioConDescuento: {p.PrecioConDescuento}");
+                    }
+                    Console.WriteLine("[DEBUG JSON] " + Newtonsoft.Json.JsonConvert.SerializeObject(productosDTO));
+
                     return Ok(new CheckoutResponseDTO
                     {
                         PedidoId = pedido.Id,
                         NumeroPedido = numeroPedido,
-                        Total = total,
+                        Total = totalFinal,
                         Estado = pedido.Estado,
                         FechaCreacion = pedido.FechaCreacion,
                         UrlPago = webpayResp.Url,
-                        CodigoPago = webpayResp.Token
+                        CodigoPago = webpayResp.Token,
+                        Productos = productosDTO,
+                        Subtotal = subtotalBase,
+                        DescuentoBase = descuentoTotal,
+                        DescuentoCupon = descuentoCupon,
+                        Impuestos = iva,
+                        Envio = costoEnvio,
+                        TotalFinal = totalFinal
                     });
                 }
                 catch (Exception webpayEx)

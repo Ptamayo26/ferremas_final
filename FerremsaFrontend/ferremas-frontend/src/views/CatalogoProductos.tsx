@@ -325,42 +325,48 @@ const CatalogoProductos: React.FC = () => {
       {/* Productos destacados / Últimos vistos */}
       <div className="mb-8">
         <h3 className="text-xl font-bold mb-4 text-ferremas-primary">Productos Destacados</h3>
-        <div className="overflow-x-auto">
-          <div className="flex space-x-4">
-            {productos.slice(0, 6).map((prod) => (
-              <div
-                key={prod.id}
-                className="bg-white rounded-lg shadow-md p-4 min-w-[180px] flex flex-col items-center cursor-pointer transition hover:scale-105"
-                onClick={() => navigate(`/producto/${prod.id}`)}
-              >
-                <img
-                  src={prod.imagenUrl && !prod.imagenUrl.startsWith('http') ? `${BASE_URL}${prod.imagenUrl}` : prod.imagenUrl || '/placeholder.png'}
-                  alt={prod.nombre}
-                  className="h-20 object-contain mb-2"
-                  onError={e => { e.currentTarget.src = '/placeholder.png'; }}
-                />
-                <span className="text-ferremas-primary font-bold text-sm mb-1">{prod.nombre}</span>
-                <span className="text-xs text-gray-500 mb-1">{prod.marcaNombre || 'Sin marca'}</span>
-                <span className="text-ferremas-primary font-semibold mb-1">
-                  {prod.precioConDescuento != null && prod.precioOriginal != null && prod.precioConDescuento < prod.precioOriginal ? (
-                    <>
-                      <span className="text-gray-500 line-through mr-2 text-sm">
-                        ${prod.precioOriginal?.toLocaleString()}
-                      </span>
-                      <span className="text-ferremas-primary font-bold text-lg">
-                        ${prod.precioConDescuento?.toLocaleString()}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-ferremas-primary font-bold text-lg">
+        <Slider {...sliderSettings}>
+          {productos.slice(0, 6).map((prod) => (
+            <div
+              key={prod.id}
+              className="bg-white rounded-lg shadow-md p-4 min-w-[180px] flex flex-col items-center cursor-pointer transition hover:scale-105"
+              onClick={() => navigate(`/producto/${prod.id}`)}
+            >
+              <img
+                src={prod.nombre === 'Taladro Percutor 650W'
+                  ? `${BASE_URL}/images/productos/Taladro percutor 650W.webp`
+                  : (prod.imagenUrl && !prod.imagenUrl.startsWith('http')
+                      ? `${BASE_URL}${prod.imagenUrl}`
+                      : prod.imagenUrl || '/placeholder.png')}
+                alt={prod.nombre}
+                className="h-20 object-contain mb-2"
+                onError={e => { e.currentTarget.src = '/placeholder.png'; }}
+              />
+              <div className="w-full flex flex-col items-center mb-1">
+                <span className="text-ferremas-primary font-bold text-base text-center truncate w-full block">{prod.nombre}</span>
+                {prod.marcaNombre && (
+                  <span className="text-xs text-gray-500 text-center w-full block">{prod.marcaNombre}</span>
+                )}
+              </div>
+              <span className="text-ferremas-primary font-semibold mb-1">
+                {prod.precioConDescuento != null && prod.precioOriginal != null && prod.precioConDescuento < prod.precioOriginal ? (
+                  <>
+                    <span className="text-gray-500 line-through mr-2 text-sm">
                       ${prod.precioOriginal?.toLocaleString()}
                     </span>
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+                    <span className="text-ferremas-primary font-bold text-lg">
+                      ${prod.precioConDescuento?.toLocaleString()}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-ferremas-primary font-bold text-lg">
+                    ${prod.precioOriginal?.toLocaleString()}
+                  </span>
+                )}
+              </span>
+            </div>
+          ))}
+        </Slider>
       </div>
 
       {/* Especiales de temporada */}

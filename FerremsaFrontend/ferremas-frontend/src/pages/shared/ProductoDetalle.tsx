@@ -155,19 +155,6 @@ const ProductoDetalle: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                        {/* Selector de cantidad */}
-                        <div className="mb-4 flex items-center gap-2">
-                            <span className="font-semibold">Cantidad:</span>
-                            <button
-                                className="w-8 h-8 rounded bg-gray-200 hover:bg-gray-300 text-lg font-bold"
-                                onClick={() => setCantidad(c => Math.max(1, c - 1))}
-                            >-</button>
-                            <span className="w-8 text-center">{cantidad}</span>
-                            <button
-                                className="w-8 h-8 rounded bg-gray-200 hover:bg-gray-300 text-lg font-bold"
-                                onClick={() => setCantidad(c => c + 1)}
-                            >+</button>
-                        </div>
                         {/* Botón agregar al carrito */}
                         <div className="mb-4">
                             <AddToCartButton

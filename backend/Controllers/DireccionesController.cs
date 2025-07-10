@@ -72,6 +72,32 @@ namespace Ferremas.Api.Controllers
                 if (cliente == null)
                     return BadRequest("No existe un cliente asociado a este usuario.");
 
+                // Antes de crear la nueva dirección, buscar si ya existe una igual para este usuario
+                var direccionExistente = await _context.Direcciones.FirstOrDefaultAsync(d =>
+                    d.UsuarioId == usuarioId &&
+                    d.Calle == dto.Calle &&
+                    d.Numero == dto.Numero &&
+                    (d.Departamento ?? "") == (dto.Departamento ?? "") &&
+                    d.Comuna == dto.Comuna &&
+                    d.Region == dto.Region
+                );
+                if (direccionExistente != null)
+                {
+                    // Si existe, retornar la existente
+                    return Conflict(new DireccionDTO
+                    {
+                        Id = direccionExistente.Id,
+                        Calle = direccionExistente.Calle,
+                        Numero = direccionExistente.Numero,
+                        Departamento = direccionExistente.Departamento,
+                        Comuna = direccionExistente.Comuna,
+                        Region = direccionExistente.Region,
+                        CodigoPostal = direccionExistente.CodigoPostal,
+                        EsPrincipal = direccionExistente.EsPrincipal,
+                        FechaModificacion = direccionExistente.FechaModificacion
+                    });
+                }
+
                 // Si esta dirección será principal, quitar la principal actual
                 if (dto.EsPrincipal)
                 {
@@ -233,6 +259,133 @@ namespace Ferremas.Api.Controllers
                 await _context.SaveChangesAsync();
 
                 return Ok(new DireccionDTO
+                {
+                    Id = direccion.Id,
+                    Calle = direccion.Calle,
+                    Numero = direccion.Numero,
+                    Departamento = direccion.Departamento,
+                    Comuna = direccion.Comuna,
+                    Region = direccion.Region,
+                    CodigoPostal = direccion.CodigoPostal,
+                    EsPrincipal = direccion.EsPrincipal,
+                    FechaModificacion = direccion.FechaModificacion
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // NUEVO: Endpoints para clientes autenticados
+        [HttpGet("mis")]
+        public async Task<ActionResult<IEnumerable<DireccionDTO>>> GetMisDirecciones()
+        {
+            try
+            {
+                // Obtener el usuario autenticado
+                var usuarioIdStr = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(usuarioIdStr) || !int.TryParse(usuarioIdStr, out int usuarioId))
+                    return Unauthorized("No se pudo identificar el usuario autenticado");
+
+                var direcciones = await _context.Direcciones
+                    .Where(d => d.UsuarioId == usuarioId)
+                    .OrderByDescending(d => d.EsPrincipal)
+                    .ThenBy(d => d.Calle)
+                    .Select(d => new DireccionDTO
+                    {
+                        Id = d.Id,
+                        Calle = d.Calle,
+                        Numero = d.Numero,
+                        Departamento = d.Departamento,
+                        Comuna = d.Comuna,
+                        Region = d.Region,
+                        CodigoPostal = d.CodigoPostal,
+                        EsPrincipal = d.EsPrincipal,
+                        FechaModificacion = d.FechaModificacion
+                    })
+                    .ToListAsync();
+
+                return Ok(direcciones);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
+
+        [HttpPost("mis")]
+        public async Task<ActionResult<DireccionDTO>> CrearMiDireccion([FromBody] DireccionDTO dto)
+        {
+            try
+            {
+                // Obtener el usuario autenticado
+                var usuarioIdStr = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(usuarioIdStr) || !int.TryParse(usuarioIdStr, out int usuarioId))
+                    return Unauthorized("No se pudo identificar el usuario autenticado");
+
+                // Buscar el cliente relacionado a este usuario
+                var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.UsuarioId == usuarioId);
+                if (cliente == null)
+                    return BadRequest("No existe un cliente asociado a este usuario.");
+
+                // Antes de crear la nueva dirección, buscar si ya existe una igual para este usuario
+                var direccionExistente = await _context.Direcciones.FirstOrDefaultAsync(d =>
+                    d.UsuarioId == usuarioId &&
+                    d.Calle == dto.Calle &&
+                    d.Numero == dto.Numero &&
+                    (d.Departamento ?? "") == (dto.Departamento ?? "") &&
+                    d.Comuna == dto.Comuna &&
+                    d.Region == dto.Region
+                );
+                if (direccionExistente != null)
+                {
+                    // Si existe, retornar la existente
+                    return Conflict(new DireccionDTO
+                    {
+                        Id = direccionExistente.Id,
+                        Calle = direccionExistente.Calle,
+                        Numero = direccionExistente.Numero,
+                        Departamento = direccionExistente.Departamento,
+                        Comuna = direccionExistente.Comuna,
+                        Region = direccionExistente.Region,
+                        CodigoPostal = direccionExistente.CodigoPostal,
+                        EsPrincipal = direccionExistente.EsPrincipal,
+                        FechaModificacion = direccionExistente.FechaModificacion
+                    });
+                }
+
+                // Si esta dirección será principal, quitar la principal actual
+                if (dto.EsPrincipal)
+                {
+                    var direccionPrincipalActual = await _context.Direcciones
+                        .FirstOrDefaultAsync(d => d.UsuarioId == usuarioId && d.EsPrincipal == true);
+                    if (direccionPrincipalActual != null)
+                    {
+                        direccionPrincipalActual.EsPrincipal = false;
+                        direccionPrincipalActual.FechaModificacion = DateTime.UtcNow;
+                    }
+                }
+
+                var direccion = new Direccion
+                {
+                    UsuarioId = usuarioId,
+                    ClienteId = cliente.Id,
+                    Calle = dto.Calle,
+                    Numero = dto.Numero,
+                    Departamento = dto.Departamento,
+                    Comuna = dto.Comuna,
+                    Region = dto.Region,
+                    CodigoPostal = dto.CodigoPostal,
+                    EsPrincipal = dto.EsPrincipal,
+                    FechaCreacion = DateTime.UtcNow,
+                    FechaModificacion = DateTime.UtcNow
+                };
+
+                _context.Direcciones.Add(direccion);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetMisDirecciones), null, new DireccionDTO
                 {
                     Id = direccion.Id,
                     Calle = direccion.Calle,

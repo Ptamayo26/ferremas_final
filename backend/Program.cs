@@ -48,6 +48,7 @@ builder.Services.AddControllers()
         options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
         options.SerializerSettings.TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None;
         options.SerializerSettings.DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Include;
+        options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
     });
 
 // Agregar HttpContextAccessor y HttpClientFactory

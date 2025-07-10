@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../services/api';
 
 interface DireccionesModalProps {
@@ -15,7 +15,30 @@ const DireccionesModal: React.FC<DireccionesModalProps> = ({ open, onClose, dire
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (!open) return null;
+  // Unificar lógica de limpieza y carga de direcciones en un solo useEffect
+  useEffect(() => {
+    if (open) {
+      setForm({ calle: '', numero: '', comuna: '', region: '', departamento: '', codigoPostal: '', esPrincipal: false });
+      setEditingIdx(null);
+      setError(null);
+      // Cargar direcciones
+      const fetchDirecciones = async () => {
+        try {
+          let res;
+          if (!usuarioId || usuarioId === 0) {
+            res = await apiClient.get('/api/direcciones/mis');
+          } else {
+            res = await apiClient.get(`/api/direcciones/usuario/${usuarioId}`);
+          }
+          setList(res.data);
+        } catch {
+          // Si falla, mantener la lista inicial
+        }
+      };
+      fetchDirecciones();
+    }
+    // No poner hooks condicionales ni returns aquí
+  }, [open, usuarioId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,6 +48,18 @@ const DireccionesModal: React.FC<DireccionesModalProps> = ({ open, onClose, dire
     // Validación de campos obligatorios
     if (!form.calle || !form.numero || !form.comuna || !form.region) {
       setError('Completa todos los campos obligatorios: Calle, Número, Comuna y Región.');
+      return;
+    }
+    // Validación de duplicados en frontend
+    const yaExiste = list.some(dir =>
+      (dir.calle || dir.Calle) === form.calle &&
+      (dir.numero || dir.Numero) === form.numero &&
+      ((dir.departamento || dir.Departamento || '') === (form.departamento || '')) &&
+      (dir.comuna || dir.Comuna) === form.comuna &&
+      (dir.region || dir.Region) === form.region
+    );
+    if (yaExiste && editingIdx === null) {
+      setError('Ya tienes una dirección igual registrada.');
       return;
     }
     try {
@@ -45,7 +80,13 @@ const DireccionesModal: React.FC<DireccionesModalProps> = ({ open, onClose, dire
         setList(updated);
         setEditingIdx(null);
       } else {
-        const res = await apiClient.post(`/api/direcciones/usuario/${usuarioId}`, payload);
+        // Si usuarioId es null o 0, usar endpoint de cliente autenticado
+        let res;
+        if (!usuarioId || usuarioId === 0) {
+          res = await apiClient.post(`/api/direcciones/mis`, payload);
+        } else {
+          res = await apiClient.post(`/api/direcciones/usuario/${usuarioId}`, payload);
+        }
         setList([...list, res.data]);
       }
       setForm({ calle: '', numero: '', comuna: '', region: '', departamento: '', codigoPostal: '', esPrincipal: false });
@@ -71,8 +112,14 @@ const DireccionesModal: React.FC<DireccionesModalProps> = ({ open, onClose, dire
 
   const handleClose = () => {
     onUpdated(list);
+    setForm({ calle: '', numero: '', comuna: '', region: '', departamento: '', codigoPostal: '', esPrincipal: false });
+    setEditingIdx(null);
+    setError(null);
     onClose();
   };
+
+  // El return condicional debe ir después de los hooks
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "force": "^0.0.3",
     "react-icons": "^5.5.0"
   }
 }

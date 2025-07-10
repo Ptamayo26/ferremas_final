@@ -3,6 +3,7 @@ using Ferremas.Api.Services;
 using Ferremas.Api.Services.Interfaces;
 using System.Text.Json;
 using System;
+using Ferremas.Api.DTOs;
 
 namespace Ferremas.Api.Controllers
 {
@@ -72,30 +73,67 @@ namespace Ferremas.Api.Controllers
                 return Ok(new { success = false, message = "No se encontró el pedido asociado al pago." });
             }
 
-            // Mapear los datos relevantes para el frontend
             var detalles = pago.Pedido.Detalles;
-            decimal subtotalBruto = detalles.Sum(d => d.Subtotal ?? ((d.PrecioUnitario ?? 0) * (d.Cantidad ?? 0)));
+            decimal subtotalBruto = detalles.Sum(d => (decimal?)(d.Subtotal ?? ((d.PrecioUnitario ?? 0) * (d.Cantidad ?? 0)))) ?? 0m;
             decimal subtotalNeto = Math.Round(subtotalBruto / 1.19m, 0);
             decimal iva = subtotalBruto - subtotalNeto;
-            decimal descuento = 0m; // Si tienes lógica de descuentos, cámbiala aquí
-            decimal envio = 0m; // Si tienes lógica de envío, cámbiala aquí
-            var pedido = new {
-                numeroPedido = pago.Pedido.Id.ToString(),
-                total = subtotalBruto, // El total es el valor con IVA
-                estado = pago.Pedido.Estado,
-                fechaCreacion = pago.Pedido.FechaCreacion,
-                tiempoEnvio = "2-4 días hábiles", // Simulado
-                urlBoleta = "/descargas/boleta" + pago.Pedido.Id + ".pdf", // Simulado
-                urlFactura = "/descargas/factura" + pago.Pedido.Id + ".pdf", // Simulado
-                productos = detalles.Select(d => new {
-                    nombre = d.Producto?.Nombre ?? "Producto",
-                    cantidad = d.Cantidad,
-                    precio = d.PrecioUnitario
-                }),
-                subtotal = subtotalNeto,
-                descuento,
-                impuestos = iva,
-                envio
+            decimal descuentoBase = 0m;
+            decimal descuentoCupon = 0m;
+            decimal envio = 0m;
+            decimal totalFinal = pago.Pedido.Total ?? 0m;
+            // Buscar si hay observaciones con desglose de descuentos
+            foreach (var d in detalles)
+            {
+                if (!string.IsNullOrEmpty(d.Observaciones))
+                {
+                    var parts = d.Observaciones.Split(',');
+                    foreach (var part in parts)
+                    {
+                        if (part.StartsWith("descuentoBase:"))
+                            decimal.TryParse(part.Replace("descuentoBase:", ""), out descuentoBase);
+                        if (part.StartsWith("descuentoCupon:"))
+                            decimal.TryParse(part.Replace("descuentoCupon:", ""), out descuentoCupon);
+                    }
+                }
+            }
+            // Mapear productos
+            var productos = detalles.Select(d => {
+                decimal precioOriginal = (decimal)(d.PrecioUnitario ?? 0);
+                decimal precioConDescuento = 0;
+                if (!string.IsNullOrEmpty(d.Observaciones))
+                {
+                    var parts = d.Observaciones.Split(',');
+                    foreach (var part in parts)
+                    {
+                        if (part.StartsWith("precioOriginal:"))
+                            decimal.TryParse(part.Replace("precioOriginal:", ""), out precioOriginal);
+                        if (part.StartsWith("precioConDescuento:"))
+                            decimal.TryParse(part.Replace("precioConDescuento:", ""), out precioConDescuento);
+                    }
+                }
+                return new ProductoResumenDTO {
+                    Nombre = d.Producto?.Nombre ?? "Producto",
+                    Cantidad = d.Cantidad ?? 1,
+                    Precio = d.PrecioUnitario ?? 0,
+                    PrecioOriginal = precioOriginal,
+                    PrecioConDescuento = precioConDescuento
+                };
+            }).ToList();
+            var pedido = new CheckoutResponseDTO {
+                PedidoId = pago.Pedido.Id,
+                NumeroPedido = pago.Pedido.Id.ToString(),
+                Total = subtotalBruto,
+                Estado = pago.Pedido.Estado,
+                FechaCreacion = pago.Pedido.FechaCreacion,
+                UrlPago = null,
+                CodigoPago = null,
+                Productos = productos,
+                Subtotal = subtotalNeto,
+                DescuentoBase = descuentoBase,
+                DescuentoCupon = descuentoCupon,
+                Impuestos = iva,
+                Envio = envio,
+                TotalFinal = totalFinal
             };
             return Ok(new { success = true, pedido });
         }

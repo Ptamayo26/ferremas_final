@@ -5,6 +5,9 @@ import { enviosService } from '../../services/envios';
 import { API_BASE_URL } from '../../constants/api';
 import type { CarritoItemDTO, CarritoResumenDTO } from '../../types/api';
 import { useAuth } from '../../context/AuthContext';
+import DireccionesModal from '../ui/DireccionesModal';
+import chileGeoService from '../../services/chileGeo';
+import { apiClient } from '../../services/api';
 
 const CarritoAutenticado: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -26,6 +29,57 @@ const CarritoAutenticado: React.FC = () => {
   const [codigoDescuento, setCodigoDescuento] = useState('');
   const [descuentoInfo, setDescuentoInfo] = useState<{tipo: string, valor: number} | null>(null);
   const [descuentoError, setDescuentoError] = useState<string | null>(null);
+  const [perfil, setPerfil] = useState<any>(null);
+  const [direcciones, setDirecciones] = useState<any[]>([]);
+  const [direccionSeleccionada, setDireccionSeleccionada] = useState<any>(null);
+  const [showDireccionesModal, setShowDireccionesModal] = useState(false);
+  const [regiones, setRegiones] = useState<any[]>([]);
+  const [comunas, setComunas] = useState<any[]>([]);
+  const [region, setRegion] = useState('');
+  const [comuna, setComuna] = useState('');
+
+  // Obtener perfil completo al cargar
+  useEffect(() => {
+    const fetchPerfil = async () => {
+      if (user?.id) {
+        try {
+          const res = await apiClient.get('/api/Clientes/mi-perfil');
+          setPerfil(res.data);
+          setDirecciones(res.data.direcciones || []);
+          setRutEnvio(res.data.rut || '');
+          setCorreoEnvio(res.data.correoElectronico || '');
+          setNombreEnvio(res.data.nombre ? `${res.data.nombre} ${res.data.apellido || ''}` : '');
+        } catch (e) {
+          setPerfil(null);
+          setDirecciones([]);
+        }
+      }
+    };
+    fetchPerfil();
+  }, [user]);
+
+  // Cargar regiones al montar
+  useEffect(() => {
+    chileGeoService.getRegiones().then(setRegiones);
+  }, []);
+
+  // Cargar comunas al cambiar región
+  useEffect(() => {
+    if (region) {
+      chileGeoService.getComunasByRegion(region).then(setComunas);
+    } else {
+      setComunas([]);
+    }
+  }, [region]);
+
+  // Cuando selecciona una dirección guardada
+  useEffect(() => {
+    if (direccionSeleccionada && direccionSeleccionada.id) {
+      setDireccionEnvio(`${direccionSeleccionada.calle} ${direccionSeleccionada.numero}${direccionSeleccionada.departamento ? ', ' + direccionSeleccionada.departamento : ''}`);
+      setRegion(direccionSeleccionada.region);
+      setComuna(direccionSeleccionada.comuna);
+    }
+  }, [direccionSeleccionada]);
 
   useEffect(() => {
     const fetchCarrito = async () => {
@@ -107,8 +161,25 @@ const CarritoAutenticado: React.FC = () => {
         rut: rutEnvio,
         correo: correoEnvio,
         metodoEnvio: metodoEnvio,
-        costoEnvio: costoEnvio
+        costoEnvio: 0,
+        codigoDescuento: descuentoInfo ? codigoDescuento : undefined,
+        items: items.map(item => ({
+          productoId: item.productoId,
+          precioConDescuento: item.precioConDescuento ?? 0,
+          precioOriginal: item.precioOriginal ?? item.productoPrecio,
+          cantidad: item.cantidad,
+          // Campos extra para cumplir con el tipado del frontend
+          id: item.id ?? 0,
+          productoNombre: item.productoNombre ?? '',
+          productoPrecio: item.productoPrecio ?? 0,
+          subtotal: (item.precioConDescuento ?? item.productoPrecio) * item.cantidad,
+          fechaAgregado: item.fechaAgregado ?? new Date()
+        }))
       };
+      if (!checkoutData.items || checkoutData.items.length === 0) {
+        setErroresEnvio(['No hay productos en el carrito para procesar el pedido.']);
+        return;
+      }
       const response = await checkoutService.procesarCheckout(checkoutData);
       
       // ✅ USAR DIRECTAMENTE LA RESPUESTA DEL CHECKOUT
@@ -127,9 +198,9 @@ const CarritoAutenticado: React.FC = () => {
   };
 
   // Calcular subtotal, IVA y total usando precioConDescuento
-  const subtotalConDescuento = items.reduce((sum, item) => sum + ((item.precioConDescuento ?? item.productoPrecio) * item.cantidad), 0);
-  const ivaConDescuento = Math.round(subtotalConDescuento * 0.19);
-  const totalConDescuento = subtotalConDescuento + ivaConDescuento;
+  const totalConIVA = items.reduce((sum, item) => sum + ((item.precioConDescuento ?? item.productoPrecio) * item.cantidad), 0);
+  const neto = Math.round(totalConIVA / 1.19);
+  const iva = totalConIVA - neto;
 
   // Validar el cupón contra el backend
   const validarDescuento = async () => {
@@ -162,7 +233,7 @@ const CarritoAutenticado: React.FC = () => {
   // Calcular descuento real basado en el tipo de cupón
   const calcularDescuentoReal = () => {
     if (!descuentoInfo) return 0;
-    const subtotal = subtotalConDescuento;
+    const subtotal = totalConIVA;
     if (descuentoInfo.tipo === 'porcentaje') {
       return Math.round(subtotal * (descuentoInfo.valor / 100));
     } else if (descuentoInfo.tipo === 'monto') {
@@ -300,12 +371,72 @@ const CarritoAutenticado: React.FC = () => {
             </div>
             <div className="mb-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-              <input type="text" value={direccionEnvio} onChange={e => setDireccionEnvio(e.target.value)} className="input-field focus-ring w-full" />
+              <div className="flex gap-2">
+                <select
+                  className="input-field w-full"
+                  value={direccionSeleccionada?.id || ''}
+                  onChange={e => {
+                    const id = e.target.value;
+                    const dir = direcciones.find(d => d.id == id);
+                    setDireccionSeleccionada(dir || null);
+                  }}
+                >
+                  <option value="">Selecciona una dirección guardada</option>
+                  {direcciones.map(dir => (
+                    <option key={dir.id} value={dir.id}>
+                      {dir.calle} {dir.numero}, {dir.comuna}, {dir.region}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" className="btn-secondary" onClick={() => setShowDireccionesModal(true)}>
+                  Añadir/Editar
+                </button>
+              </div>
+              {showDireccionesModal && (
+                <DireccionesModal
+                  open={showDireccionesModal}
+                  onClose={() => setShowDireccionesModal(false)}
+                  direcciones={direcciones}
+                  onUpdated={d => { setDirecciones(d); setShowDireccionesModal(false); }}
+                  usuarioId={user?.rol === 'ADMIN' || user?.rol === 'VENDEDOR' ? perfil?.id : null}
+                />
+              )}
             </div>
-            <div className="mb-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
-              <input type="text" value={ciudadEnvio} onChange={e => setCiudadEnvio(e.target.value)} className="input-field focus-ring w-full" />
-            </div>
+            {/* Si no selecciona dirección, permitir ingresar manualmente */}
+            {!direccionSeleccionada && (
+              <>
+                <div className="mb-2">
+                  <input type="text" value={direccionEnvio} onChange={e => setDireccionEnvio(e.target.value)} className="input-field focus-ring w-full" placeholder="Calle y número" />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Región</label>
+                  <select
+                    className="input-field w-full"
+                    value={region}
+                    onChange={e => setRegion(e.target.value)}
+                  >
+                    <option value="">Selecciona una región</option>
+                    {regiones.map(r => (
+                      <option key={r.codigo} value={r.codigo}>{r.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Comuna</label>
+                  <select
+                    className="input-field w-full"
+                    value={comuna}
+                    onChange={e => setComuna(e.target.value)}
+                    disabled={!region}
+                  >
+                    <option value="">Selecciona una comuna</option>
+                    {comunas.map(c => (
+                      <option key={c.codigo} value={c.nombre}>{c.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
             <div className="mb-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Método de envío</label>
               <select value={metodoEnvio} onChange={e => setMetodoEnvio(e.target.value)} className="input-field focus-ring w-full">
@@ -325,8 +456,12 @@ const CarritoAutenticado: React.FC = () => {
           {/* Desglose de totales MOVIDO ABAJO DEL FORM */}
           <div className="border-t pt-4 mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span>Subtotal (Neto):</span>
-              <span>${subtotalConDescuento.toLocaleString('es-CL')}</span>
+              <span>Neto:</span>
+              <span>${neto.toLocaleString('es-CL')}</span>
+            </div>
+            <div className="flex justify-between items-center mb-2">
+              <span>IVA (19%):</span>
+              <span>${iva.toLocaleString('es-CL')}</span>
             </div>
             {descuentoInfo && (
               <div className="flex justify-between items-center mb-2 text-green-600">
@@ -334,13 +469,9 @@ const CarritoAutenticado: React.FC = () => {
                 <span>- ${descuentoReal.toLocaleString('es-CL')}</span>
               </div>
             )}
-            <div className="flex justify-between items-center mb-2">
-              <span>IVA (19%):</span>
-              <span>${ivaConDescuento.toLocaleString('es-CL')}</span>
-            </div>
             <div className="flex justify-between items-center font-bold text-lg">
               <span>Total:</span>
-              <span>${(totalConDescuento - descuentoReal).toLocaleString('es-CL')}</span>
+              <span>${(totalConIVA - descuentoReal).toLocaleString('es-CL')}</span>
             </div>
           </div>
           {/* Acciones */}
