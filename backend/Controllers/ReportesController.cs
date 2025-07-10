@@ -88,7 +88,10 @@ namespace Ferremas.Api.Controllers
                 Console.WriteLine($"{claim.Type}: {claim.Value}");
             }
             var ventas = await _context.Pedidos.CountAsync();
-            var ingresos = await _context.Pagos.Where(p => p.Estado == "approved").SumAsync(p => (decimal?)p.Monto) ?? 0;
+            // Cambiado: ahora cuenta pagos 'approved' o 'pendiente' como ingresos
+            var ingresos = await _context.Pagos
+                .Where(p => p.Estado == "approved" || p.Estado == "pendiente")
+                .SumAsync(p => (decimal?)p.Monto) ?? 0;
             var egresos = 0;
             var utilidad = ingresos - egresos;
             var reporte = new {

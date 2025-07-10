@@ -3,8 +3,9 @@ import { apiClient } from '../services/api';
 import type { ReporteVentas, ReporteInventario, UsuarioResponseDTO, ProductoResponseDTO } from '../types/api';
 import GestionUsuarios from '../components/admin/GestionUsuarios';
 import CatalogoProductosAdmin from '../components/admin/productos/CatalogoProductosAdmin';
+import ContadorView from './ContadorView';
 
-type AdminViewSection = 'dashboard' | 'users' | 'catalogo';
+type AdminViewSection = 'dashboard' | 'users' | 'catalogo' | 'contador';
 
 const AdminView: React.FC = () => {
   const [activeSection, setActiveSection] = useState<AdminViewSection>('dashboard');
@@ -92,6 +93,8 @@ const AdminView: React.FC = () => {
         return <GestionUsuarios />;
       case 'catalogo':
         return <CatalogoProductosAdmin />;
+      case 'contador':
+        return <ContadorView />;
       case 'dashboard':
       default:
         return (
@@ -250,6 +253,12 @@ const AdminView: React.FC = () => {
           onClick={() => setActiveSection('catalogo')}
         >
           Catálogo de Productos
+        </button>
+        <button
+          className={`px-4 py-2 rounded ${activeSection === 'contador' ? 'bg-purple-600 text-white' : 'bg-white border text-gray-700'}`}
+          onClick={() => setActiveSection('contador')}
+        >
+          Panel de Contador
         </button>
         <button
           className="bg-ferremas-success text-white px-4 py-2 rounded hover:bg-ferremas-success-dark transition"
