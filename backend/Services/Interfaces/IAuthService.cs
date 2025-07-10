@@ -27,5 +27,10 @@ namespace Ferremas.Api.Services.Interfaces
         /// Actualiza el token JWT
         /// </summary>
         Task<AuthResponse> RefreshTokenAsync(RefreshTokenDTO model);
+
+        /// <summary>
+        /// Revoca un refresh token
+        /// </summary>
+        Task<bool> RevokeRefreshTokenAsync(string refreshToken);
     }
 } 

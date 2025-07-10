@@ -446,7 +446,7 @@ namespace Ferremas.Api.Controllers
 
         // DELETE: api/pedidos/{id}
         [HttpDelete("{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> DeletePedido(int id)
         {
             try

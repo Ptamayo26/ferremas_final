@@ -254,7 +254,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> EliminarProducto(int id)
         {
             var producto = await _context.Productos.FindAsync(id);

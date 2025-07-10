@@ -232,7 +232,7 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = false,
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero,
-        RoleClaimType = ClaimTypes.Role
+        RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
     };
 
     // Event handlers para debugging JWT
@@ -257,16 +257,10 @@ builder.Services.AddAuthentication(options =>
 // Configuración de autorización con políticas mejoradas
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("RequireAdministrador", policy => policy.RequireRole("administrador"));
-    options.AddPolicy("RequireVendedor", policy => policy.RequireRole("vendedor", "administrador"));
-    options.AddPolicy("RequireBodeguero", policy => policy.RequireRole("bodeguero", "administrador"));
-    options.AddPolicy("RequireContador", policy => policy.RequireRole("contador", "administrador"));
-
-    // Comentamos la política por defecto que exige autenticación globalmente.
-    // Esto nos da control granular en cada controlador con [Authorize] o [AllowAnonymous].
-    // options.DefaultPolicy = new AuthorizationPolicyBuilder()
-    //     .RequireAuthenticatedUser()
-    //     .Build();
+    options.AddPolicy("RequireRole", policy =>
+        policy.RequireAuthenticatedUser());
+    // Si quieres requerir roles específicos, puedes usar:
+    // options.AddPolicy("RequireRole", policy => policy.RequireRole("contador", "ACCOUNTANT", "administrador", "ADMIN"));
 });
 
 var app = builder.Build();

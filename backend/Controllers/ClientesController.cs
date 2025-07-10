@@ -86,7 +86,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> Delete(int id)
         {
             try

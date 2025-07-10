@@ -27,7 +27,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<ActionResult<NotificacionResponseDTO>> CreateNotificacion(NotificacionCreateDTO dto)
         {
             var notificacion = await _notificacionesService.Crear(dto);

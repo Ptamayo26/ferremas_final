@@ -37,7 +37,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<ActionResult<ProveedorResponseDTO>> CreateProveedor(ProveedorCreateDTO dto)
         {
             var proveedor = await _proveedoresService.Crear(dto);
@@ -45,7 +45,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> DeleteProveedor(int id)
         {
             var result = await _proveedoresService.Eliminar(id);

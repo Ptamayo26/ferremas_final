@@ -8,12 +8,6 @@ namespace Ferremas.Api.DTOs
     public class RefreshTokenDTO
     {
         /// <summary>
-        /// Token JWT actual
-        /// </summary>
-        [Required(ErrorMessage = "El token es requerido")]
-        public string Token { get; set; } = string.Empty;
-
-        /// <summary>
         /// Token de refresco
         /// </summary>
         [Required(ErrorMessage = "El token de refresco es requerido")]

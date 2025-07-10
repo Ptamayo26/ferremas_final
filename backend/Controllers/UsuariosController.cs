@@ -27,7 +27,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpGet]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<ActionResult<IEnumerable<UsuarioResponseDTO>>> GetUsuarios()
         {
             Console.WriteLine("=== Claims del usuario ===");
@@ -99,7 +99,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<ActionResult<UsuarioResponseDTO>> GetUsuario(int id)
         {
             var usuario = await _context.Usuarios
@@ -140,7 +140,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> PutUsuario(int id, UsuarioUpdateDTO usuarioDto)
         {
             var usuario = await _context.Usuarios.FindAsync(id);
@@ -224,7 +224,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> DeleteUsuario(int id)
         {
             Console.WriteLine($"Controlador: Iniciando eliminación de usuario ID: {id}");
@@ -260,7 +260,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpPut("reactivar/{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> ReactivarUsuario(int id)
         {
             var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);

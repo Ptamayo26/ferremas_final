@@ -72,5 +72,15 @@ namespace Ferremas.Api.Controllers
                 return BadRequest(response);
             return Ok(response);
         }
+
+        [HttpPost("revoke-token")]
+        [Authorize]
+        public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequest request)
+        {
+            var success = await _authService.RevokeRefreshTokenAsync(request.RefreshToken);
+            if (!success)
+                return BadRequest(new { exito = false, mensaje = "No se pudo revocar el token" });
+            return Ok(new { exito = true, mensaje = "Token revocado exitosamente" });
+        }
     }
 } 

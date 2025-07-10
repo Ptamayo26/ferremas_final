@@ -182,14 +182,15 @@ namespace Ferremas.Api.Services
                     return new AuthResponse { Exito = false, Mensaje = "Credenciales inválidas" };
                 }
 
-                var token = GenerateJwtToken(usuario);
+                var tokenPair = await GenerateTokenPairAsync(usuario);
                 _logger.LogInformation("Login exitoso para: {Email}", loginDto.Email);
 
                 return new AuthResponse
                 {
                     Exito = true,
                     Mensaje = "Login exitoso",
-                    Token = token,
+                    Token = tokenPair.AccessToken,
+                    RefreshToken = tokenPair.RefreshToken,
                     Usuario = new UsuarioResponseDTO
                     {
                         Id = usuario.Id,
@@ -258,68 +259,94 @@ namespace Ferremas.Api.Services
             {
                 _logger.LogInformation("Iniciando actualización de token");
                 
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_configuration["Jwt:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey no configurada"));
+                // Buscar el refresh token en la base de datos
+                var refreshToken = await _context.RefreshTokens
+                    .Include(rt => rt.Usuario)
+                    .FirstOrDefaultAsync(rt => rt.Token == model.RefreshToken && !rt.IsRevoked);
 
-                // Validar el token actual
-                var tokenValidationParameters = new TokenValidationParameters
+                if (refreshToken == null)
                 {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero
+                    _logger.LogWarning("Refresh token no encontrado o revocado");
+                    return new AuthResponse { Exito = false, Mensaje = "Refresh token inválido" };
+                }
+
+                if (refreshToken.ExpiryDate < DateTime.UtcNow)
+                {
+                    _logger.LogWarning("Refresh token expirado");
+                    return new AuthResponse { Exito = false, Mensaje = "Refresh token expirado" };
+                }
+
+                var usuario = refreshToken.Usuario;
+                if (usuario == null || !usuario.Activo)
+                {
+                    _logger.LogWarning("Usuario no encontrado o inactivo");
+                    return new AuthResponse { Exito = false, Mensaje = "Usuario no encontrado o inactivo" };
+                }
+
+                // Revocar el refresh token actual
+                refreshToken.IsRevoked = true;
+                await _context.SaveChangesAsync();
+
+                // Generar nuevo par de tokens
+                var newTokenPair = await GenerateTokenPairAsync(usuario);
+
+                return new AuthResponse
+                {
+                    Exito = true,
+                    Mensaje = "Token actualizado exitosamente",
+                    Token = newTokenPair.AccessToken,
+                    RefreshToken = newTokenPair.RefreshToken,
+                    Usuario = new UsuarioResponseDTO
+                    {
+                        Id = usuario.Id,
+                        Nombre = usuario.Nombre,
+                        Apellido = usuario.Apellido,
+                        Email = usuario.Email,
+                        Rut = usuario.Rut,
+                        Telefono = usuario.Telefono,
+                        Rol = usuario.Rol,
+                        Activo = usuario.Activo,
+                        FechaRegistro = usuario.FechaRegistro
+                    }
                 };
-
-                try
-                {
-                    var principal = tokenHandler.ValidateToken(model.Token, tokenValidationParameters, out var validatedToken);
-                    var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                    if (string.IsNullOrEmpty(userId))
-                    {
-                        return new AuthResponse { Exito = false, Mensaje = "Token inválido" };
-                    }
-
-                    var usuario = await _context.Usuarios.FindAsync(int.Parse(userId));
-                    if (usuario == null || usuario.Activo != true)
-                    {
-                        return new AuthResponse { Exito = false, Mensaje = "Usuario no encontrado o inactivo" };
-                    }
-
-                    // Generar nuevo token
-                    var newToken = GenerateJwtToken(usuario);
-
-                    return new AuthResponse
-                    {
-                        Exito = true,
-                        Mensaje = "Token actualizado exitosamente",
-                        Token = newToken,
-                        Usuario = new UsuarioResponseDTO
-                        {
-                            Id = usuario.Id,
-                            Nombre = usuario.Nombre,
-                            Apellido = usuario.Apellido,
-                            Email = usuario.Email,
-                            Rut = usuario.Rut,
-                            Telefono = usuario.Telefono,
-                            Rol = usuario.Rol,
-                            Activo = usuario.Activo,
-                            FechaRegistro = usuario.FechaRegistro
-                        }
-                    };
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error al validar token");
-                    return new AuthResponse { Exito = false, Mensaje = "Token inválido o expirado" };
-                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al actualizar token");
                 return new AuthResponse { Exito = false, Mensaje = "Error al actualizar el token" };
             }
+        }
+
+        private async Task<TokenPair> GenerateTokenPairAsync(Usuario usuario)
+        {
+            // Generar access token
+            var accessToken = GenerateJwtToken(usuario);
+            
+            // Generar refresh token
+            var refreshToken = JwtService.GenerateRefreshToken();
+            
+            // Obtener configuración de expiración
+            int refreshTokenExpirationDays = 7; // valor por defecto
+            int.TryParse(_configuration["Jwt:RefreshTokenExpirationInDays"], out refreshTokenExpirationDays);
+            
+            // Guardar refresh token en la base de datos
+            var refreshTokenEntity = new RefreshToken
+            {
+                Token = refreshToken,
+                UsuarioId = usuario.Id,
+                ExpiryDate = DateTime.UtcNow.AddDays(refreshTokenExpirationDays),
+                IsRevoked = false,
+                CreatedAt = DateTime.UtcNow
+            };
+            
+            _context.RefreshTokens.Add(refreshTokenEntity);
+            await _context.SaveChangesAsync();
+            
+            return new TokenPair
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
         }
 
         private string GenerateJwtToken(Usuario usuario)
@@ -332,19 +359,48 @@ namespace Ferremas.Api.Services
                 new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
                 new Claim(ClaimTypes.Name, usuario.Nombre),
                 new Claim(ClaimTypes.Email, usuario.Email),
-                new Claim(ClaimTypes.Role, usuario.Rol.ToLower()),
-                new Claim("rol", usuario.Rol.ToLower())
+                new Claim(ClaimTypes.Role, usuario.Rol.ToLower()) // <-- CORRECTO para roles
             };
+
+            int expirationMinutes = 1440; // valor por defecto actualizado
+            int.TryParse(_configuration["Jwt:ExpirationInMinutes"], out expirationMinutes);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(8),
+                Expires = DateTime.UtcNow.AddMinutes(expirationMinutes),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            var jwt = tokenHandler.WriteToken(token);
+
+            // Log de expiración
+            _logger.LogInformation($"[JWT] Token generado para {usuario.Email} expira en: {tokenDescriptor.Expires}");
+
+            return jwt;
+        }
+
+        public async Task<bool> RevokeRefreshTokenAsync(string refreshToken)
+        {
+            try
+            {
+                var tokenEntity = await _context.RefreshTokens
+                    .FirstOrDefaultAsync(rt => rt.Token == refreshToken && !rt.IsRevoked);
+
+                if (tokenEntity != null)
+                {
+                    tokenEntity.IsRevoked = true;
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al revocar refresh token");
+                return false;
+            }
         }
 
         private string HashPassword(string password)

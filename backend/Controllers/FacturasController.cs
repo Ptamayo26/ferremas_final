@@ -45,7 +45,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<ActionResult<FacturaResponseDTO>> CreateFactura(FacturaCreateDTO dto)
         {
             var factura = await _facturaService.Crear(dto);
@@ -53,7 +53,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpPost("{id}/anular")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> AnularFactura(int id)
         {
             var result = await _facturaService.Anular(id);

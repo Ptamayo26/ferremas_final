@@ -169,7 +169,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpGet("historial/todos")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public IActionResult HistorialTodos()
         {
             try

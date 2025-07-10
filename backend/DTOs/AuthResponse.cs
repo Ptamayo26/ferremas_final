@@ -14,6 +14,11 @@ namespace Ferremas.Api.DTOs
         public string? Token { get; set; }
 
         /// <summary>
+        /// Refresh token para renovar el token de acceso
+        /// </summary>
+        public string? RefreshToken { get; set; }
+
+        /// <summary>
         /// Datos del usuario autenticado
         /// </summary>
         public UsuarioResponseDTO? Usuario { get; set; }

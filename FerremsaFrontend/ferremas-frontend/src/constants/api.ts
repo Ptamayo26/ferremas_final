@@ -29,6 +29,7 @@ export const AUTH_ENDPOINTS = {
 LOGIN: '/api/Auth/login',
 REGISTER: '/api/Auth/register',
 RESET_PASSWORD: '/api/Auth/reset-password',
+REFRESH_TOKEN: '/api/Auth/refresh-token',
 LOGOUT: '/api/Auth/logout',
 } as const;
 
@@ -183,6 +184,7 @@ DELIVERY: 'repartidor',
 
 export const STORAGE_KEYS = {
 AUTH_TOKEN: 'ferremas_token',
+REFRESH_TOKEN: 'ferremas_refresh_token',
 USER_DATA: 'ferremas_user',
 USER_ROLE: 'ferremas_user_role',
 THEME: 'ferremas_theme',

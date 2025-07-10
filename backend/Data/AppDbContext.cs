@@ -37,6 +37,7 @@ namespace Ferremas.Api.Data
         public DbSet<Carrito> Carrito { get; set; } = null!;
         public DbSet<DatosFacturaEmpresa> DatosFacturaEmpresa { get; set; }
         public DbSet<ListaDeseos> ListasDeseos { get; set; } = null!;
+        public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -325,6 +326,23 @@ namespace Ferremas.Api.Data
                 entity.HasOne(c => c.Producto)
                     .WithMany()
                     .HasForeignKey(c => c.ProductoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configuración de RefreshToken
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.ToTable("refresh_tokens");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.ExpiryDate).IsRequired();
+                entity.Property(e => e.IsRevoked).IsRequired();
+                entity.Property(e => e.CreatedAt).IsRequired();
+                
+                // Relación con Usuario
+                entity.HasOne(rt => rt.Usuario)
+                    .WithMany()
+                    .HasForeignKey(rt => rt.UsuarioId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }

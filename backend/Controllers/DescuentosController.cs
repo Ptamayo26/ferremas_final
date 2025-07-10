@@ -48,7 +48,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<ActionResult<DescuentoResponseDTO>> CreateDescuento(DescuentoCreateDTO dto)
         {
             var descuento = await _descuentoService.Crear(dto);
@@ -56,7 +56,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> UpdateDescuento(int id, DescuentoCreateDTO dto)
         {
             var result = await _descuentoService.Actualizar(id, dto);
@@ -67,7 +67,7 @@ namespace Ferremas.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public async Task<IActionResult> DeleteDescuento(int id)
         {
             var result = await _descuentoService.Eliminar(id);

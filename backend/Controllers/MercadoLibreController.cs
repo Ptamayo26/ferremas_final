@@ -405,7 +405,7 @@ namespace Ferremas.Api.Controllers
         /// Endpoint para obtener estadísticas de uso
         /// </summary>
         [HttpGet("estadisticas")]
-        [Authorize(Policy = "RequireAdministrador")]
+        [Authorize(Roles = "administrador")]
         public IActionResult ObtenerEstadisticas()
         {
             try

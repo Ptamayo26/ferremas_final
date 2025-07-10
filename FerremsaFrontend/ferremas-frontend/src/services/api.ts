@@ -54,12 +54,26 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Si el token es inválido, limpiamos localStorage usando las claves correctas
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-      localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
-      // No redirigimos automáticamente, dejamos que el componente maneje esto
-      console.log('Token inválido, datos de autenticación limpiados');
+      // Intentar refrescar el token automáticamente
+      const { authService } = await import('./auth');
+      const refreshSuccess = await authService.refreshToken();
+      
+      if (refreshSuccess) {
+        // Reintentar la petición original con el nuevo token
+        const originalRequest = error.config;
+        const token = authService.getToken();
+        if (token) {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return apiClient(originalRequest);
+        }
+      } else {
+        // Si no se puede refrescar, limpiar datos de autenticación
+        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
+        console.log('Token inválido y no se pudo refrescar, datos de autenticación limpiados');
+      }
     }
     return Promise.reject(error);
   }

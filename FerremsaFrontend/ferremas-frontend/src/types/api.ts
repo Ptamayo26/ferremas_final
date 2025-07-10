@@ -42,6 +42,7 @@ export interface AuthResponse {
 exito: boolean;
 mensaje?: string;
 token?: string;
+refreshToken?: string;
 usuario?: UsuarioResponseDTO;
 fechaHora?: Date;
 }

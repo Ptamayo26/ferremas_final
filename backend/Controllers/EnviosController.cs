@@ -3,6 +3,13 @@ using System.Threading.Tasks;
 using Ferremas.Api.DTOs;
 using Ferremas.Api.Services.Interfaces;
 using Ferremas.Api.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
+using System;
+using Ferremas.Api.Data;
+using Ferremas.Api.Models;
 
 namespace Ferremas.Api.Controllers
 {
@@ -14,14 +21,17 @@ namespace Ferremas.Api.Controllers
         private readonly WhatsAppWebService _whatsAppService;
         private readonly ChilexpressCotizadorService _chilexpressService;
         private readonly ShipitService _shipitService;
+        private readonly AppDbContext _context;
 
         public EnviosController(IEnvioService envioService, WhatsAppWebService whatsAppService, 
-            ChilexpressCotizadorService chilexpressService, ShipitService shipitService)
+            ChilexpressCotizadorService chilexpressService, ShipitService shipitService, AppDbContext context)
         {
             _envioService = envioService;
             _whatsAppService = whatsAppService;
             _chilexpressService = chilexpressService;
             _shipitService = shipitService;
+            _context = context;
+            Console.WriteLine("[LOG] EnviosController instanciado correctamente");
         }
 
         [HttpGet("{pedidoId}")]
@@ -303,6 +313,52 @@ namespace Ferremas.Api.Controllers
                     message = $"Error al verificar Shipit: {ex.Message}"
                 });
             }
+        }
+
+        [HttpGet("entregas")]
+        [Authorize(Roles = "contador,administrador,repartidor")]
+        public async Task<IActionResult> GetEntregas()
+        {
+            Console.WriteLine("[LOG] GetEntregas alcanzado");
+            var user = HttpContext.User;
+            var roles = user.Claims.Where(c => c.Type == "role" || c.Type.Contains("Role")).Select(c => c.Value).ToList();
+            var allClaims = user.Claims.Select(c => $"{c.Type}: {c.Value}").ToList();
+            Console.WriteLine("ROLES DEL USUARIO: " + string.Join(", ", roles));
+            Console.WriteLine("TODOS LOS CLAIMS: " + string.Join(" | ", allClaims));
+            var entregas = await _context.Envios
+                .Include(e => e.Pedido)
+                .ThenInclude(p => p.Usuario)
+                .Select(e => new {
+                    e.Id,
+                    PedidoId = e.PedidoId,
+                    Cliente = e.Pedido.Usuario != null ? e.Pedido.Usuario.Nombre : "-",
+                    Repartidor = e.RepartidorId != null ? e.RepartidorId.ToString() : "-", // Ajusta si tienes relación con repartidor
+                    Fecha = e.FechaCreacion,
+                    e.EstadoEnvio
+                })
+                .ToListAsync();
+
+            return Ok(new { exito = true, datos = entregas });
+        }
+
+        [HttpGet("logistica")]
+        [Authorize(Roles = "contador,administrador,repartidor")]
+        public async Task<IActionResult> GetLogistica()
+        {
+            var despachos = await _context.Envios
+                .Include(e => e.Pedido)
+                .ThenInclude(p => p.Usuario)
+                .Select(e => new {
+                    e.Id,
+                    PedidoId = e.PedidoId,
+                    Cliente = e.Pedido.Usuario != null ? e.Pedido.Usuario.Nombre : "-",
+                    EmpresaTransporte = e.ProveedorTransporte,
+                    e.EstadoEnvio,
+                    Fecha = e.FechaCreacion
+                })
+                .ToListAsync();
+
+            return Ok(new { exito = true, datos = despachos });
         }
     }
 }

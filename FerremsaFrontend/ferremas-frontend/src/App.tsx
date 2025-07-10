@@ -17,6 +17,7 @@ import AdminView from './views/AdminView';
 import VendedorView from './views/VendedorView';
 import BodegueroView from './views/BodegueroView';
 import ClienteView from './views/ClienteView';
+import ContadorView from './views/ContadorView';
 
 // Componentes de prueba y diagnóstico
 // import ColorTest from './components/ui/ColorTest';
@@ -114,10 +115,7 @@ const AppContent: React.FC = () => {
           {/* Rutas para otros roles */}
           <Route path="/contador/dashboard" element={
             <ProtectedRoute allowedRoles={['contador', 'ACCOUNTANT']}>
-              <div className="max-w-7xl mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold text-ferremas-primary">Panel de Contador</h1>
-                <p className="text-ferremas-gray-600 mt-2">Funcionalidad en desarrollo...</p>
-              </div>
+              <ContadorView />
             </ProtectedRoute>
           } />
           

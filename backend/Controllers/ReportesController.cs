@@ -3,19 +3,24 @@ using Ferremas.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using Ferremas.Api.Data;
 
 namespace Ferremas.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Policy = "RequireAdministrador")]
+    [Authorize(Roles = "contador,administrador")]
     public class ReportesController : ControllerBase
     {
         private readonly IReportesService _reportesService;
+        private readonly AppDbContext _context;
 
-        public ReportesController(IReportesService reportesService)
+        public ReportesController(AppDbContext context)
         {
-            _reportesService = reportesService;
+            _context = context;
         }
 
         [HttpGet("ventas/mes/{mes}/{anio}")]
@@ -71,6 +76,29 @@ namespace Ferremas.Api.Controllers
                 productosAgotados = productosBajoStock.Count(p => p.Stock == 0),
                 productosBajoStock = productosBajoStock
             });
+        }
+
+        [HttpGet("finanzas")]
+        [Authorize(Roles = "contador,administrador")]
+        public async Task<IActionResult> GetFinanzas()
+        {
+            Console.WriteLine("Claims del usuario:");
+            foreach (var claim in User.Claims)
+            {
+                Console.WriteLine($"{claim.Type}: {claim.Value}");
+            }
+            var ventas = await _context.Pedidos.CountAsync();
+            var ingresos = await _context.Pagos.Where(p => p.Estado == "approved").SumAsync(p => (decimal?)p.Monto) ?? 0;
+            var egresos = 0;
+            var utilidad = ingresos - egresos;
+            var reporte = new {
+                Fecha = DateTime.Now,
+                TotalVentas = ventas,
+                TotalIngresos = ingresos,
+                TotalEgresos = egresos,
+                Utilidad = utilidad
+            };
+            return Ok(new { exito = true, datos = new[] { reporte } });
         }
     }
 } 

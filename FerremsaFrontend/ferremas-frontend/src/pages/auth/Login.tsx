@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getRedirectPathByRole, getRoleDisplayName } from '../../utils/roleRedirect';
+import { STORAGE_KEYS } from '../../constants/api';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -19,6 +20,10 @@ const Login: React.FC = () => {
         try {
             const response = await login({ email, password });
             
+            // Guardar el token explícitamente en localStorage
+            if (response.token) {
+                localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, response.token);
+            }
             // Obtener la ruta de redirección basada en el rol
             const redirectPath = getRedirectPathByRole(response.usuario?.rol || '');
             const roleDisplayName = getRoleDisplayName(response.usuario?.rol || '');

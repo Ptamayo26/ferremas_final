@@ -18,6 +18,10 @@ const authApiClient = axios.create({
 class AuthService {
   // Método para iniciar sesión (conecta con POST /api/auth/login)
   async login(credentials: LoginDTO): Promise<AuthResponse> {
+    // Limpiar cualquier token viejo antes de hacer login
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+    localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
     try {
       console.log('🔐 Iniciando sesión para:', credentials.email);
       
@@ -97,6 +101,7 @@ class AuthService {
     
     // Limpiar todos los datos de autenticación
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER_DATA);
     localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
     
@@ -139,6 +144,11 @@ class AuthService {
     return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
   }
 
+  // Obtener el refresh token actual
+  getRefreshToken(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+  }
+
   // Obtener el rol del usuario actual
   getCurrentUserRole(): string | null {
     const user = this.getCurrentUser();
@@ -165,10 +175,16 @@ class AuthService {
       localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, response.token);
     }
 
+    // Guardar refresh token en localStorage
+    if (response.refreshToken) {
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refreshToken);
+    }
+
     // Guardar información del usuario
     if (response.usuario) {
       localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(response.usuario));
-      localStorage.setItem(STORAGE_KEYS.USER_ROLE, response.usuario.rol);
+      // Guardar el rol en minúsculas
+      localStorage.setItem(STORAGE_KEYS.USER_ROLE, response.usuario.rol ? response.usuario.rol.toLowerCase() : '');
     }
 
     console.log('💾 Datos de autenticación guardados exitosamente');
@@ -202,12 +218,32 @@ class AuthService {
     }
   }
 
-  // Método para refrescar el token (si implementas refresh tokens en el futuro)
+  // Método para refrescar el token
   async refreshToken(): Promise<boolean> {
-    // Implementación futura para refresh tokens
-    // Por ahora, simplemente redirigir al login si el token expira
-    console.log('🔄 Función de refresh token no implementada aún');
-    return false;
+    try {
+      const refreshToken = this.getRefreshToken();
+      if (!refreshToken) {
+        console.log('❌ No hay refresh token disponible');
+        return false;
+      }
+
+      const response = await authApiClient.post<AuthResponse>(
+        AUTH_ENDPOINTS.REFRESH_TOKEN,
+        { refreshToken }
+      );
+
+      if (response.data.exito && response.data.token) {
+        this.handleSuccessfulLogin(response.data);
+        console.log('✅ Token refrescado exitosamente');
+        return true;
+      } else {
+        console.log('❌ Error al refrescar token:', response.data.mensaje);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error al refrescar token:', error);
+      return false;
+    }
   }
 
   // Método para obtener el nombre de usuario para mostrar
