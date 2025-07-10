@@ -189,6 +189,5 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ## Contacto
 
-- Desarrollador: [Tu Nombre]
-- Email: [tu-email@ejemplo.com]
+- Desarrollador: Paloma Tamayo / Cristian Solis
 - Proyecto: [https://github.com/Ptamayo26/ferremas_final](https://github.com/Ptamayo26/ferremas_final) 
